@@ -77,14 +77,14 @@ navigationController = {
 
         // Find our first focusable item
         var initialItems = document.body.querySelectorAll('[x-blackberry-initialFocus=true]');
-        if (initialItems.length == 0) {
+        if (initialItems.length === 0) {
             navigationController.setRimFocus(navigationController.findHighestFocusableNodeInScreen());
         } else {
             var nextFocusNode = initialItems[0];
             if (!navigationController.isValidFocusableNode(nextFocusNode)) {
                 nextFocusNode = null;
             }
-            if (nextFocusNode != null) {
+            if (nextFocusNode !== null) {
                 var result = navigationController.determineBoundingRect(nextFocusNode);
                 var bounds = {
                     'element' : nextFocusNode,
@@ -137,26 +137,27 @@ navigationController = {
 
     /* Returns the current focused element's id */
     getFocus : function() {
-        if (navigationController.currentFocused == null)
+        if (navigationController.currentFocused === null) {
             return null;
-        else
+        } else {
             return navigationController.currentFocused.element.getAttribute('id');
+        }
     },
 
     /* Set's the focus to an element with the supplied id */
     setFocus : function(id) {
-        if (id.length == 0) {
+        if (id.length === 0) {
             navigationController.focusOut();
             return;
         }
         var nextFocusNode = null;
         nextFocusNode = document.getElementById(id);
-        if (nextFocusNode != null) {
+        if (nextFocusNode !== null) {
             if (!navigationController.isValidFocusableNode(nextFocusNode)) {
                 nextFocusNode = null;
             }
         }
-        if (nextFocusNode != null) {
+        if (nextFocusNode !== null) {
             var result = navigationController.determineBoundingRect(nextFocusNode);
             var bounds = {
                 'element' : nextFocusNode,
@@ -186,7 +187,7 @@ navigationController = {
         }
 
         // Determine our direction and scroll
-        if (navigationController.currentDirection == navigationController.DOWN) {
+        if (navigationController.currentDirection === navigationController.DOWN) {
             if (navigationController.currentFocused
                     && navigationController.currentFocused.element.hasAttribute('x-blackberry-onDown')) {
                 eval(navigationController.currentFocused.element.getAttribute('x-blackberry-onDown'));
@@ -194,7 +195,7 @@ navigationController = {
             } else {
                 navigationController.handleDirectionDown();
             }
-        } else if (navigationController.currentDirection == navigationController.UP) {
+        } else if (navigationController.currentDirection === navigationController.UP) {
             if (navigationController.currentFocused
                     && navigationController.currentFocused.element.hasAttribute('x-blackberry-onUp')) {
                 eval(navigationController.currentFocused.element.getAttribute('x-blackberry-onUp'));
@@ -202,7 +203,7 @@ navigationController = {
             } else {
                 navigationController.handleDirectionUp();
             }
-        } else if (navigationController.currentDirection == navigationController.RIGHT) {
+        } else if (navigationController.currentDirection === navigationController.RIGHT) {
             if (navigationController.currentFocused
                     && navigationController.currentFocused.element.hasAttribute('x-blackberry-onRight')) {
                 eval(navigationController.currentFocused.element.getAttribute('x-blackberry-onRight'));
@@ -210,7 +211,7 @@ navigationController = {
             } else {
                 navigationController.handleDirectionRight();
             }
-        } else if (navigationController.currentDirection == navigationController.LEFT) {
+        } else if (navigationController.currentDirection === navigationController.LEFT) {
             if (navigationController.currentFocused
                     && navigationController.currentFocused.element.hasAttribute('x-blackberry-onLeft')) {
                 eval(navigationController.currentFocused.element.getAttribute('x-blackberry-onLeft'));
@@ -222,24 +223,75 @@ navigationController = {
 
         navigationController.lastDirection = navigationController.currentDirection;
     },
+    
+    getNativeInfoForControl : function(htmlElem) {
+        function getSelectChoices() {
+            var choices = [],
+                optionNodes = htmlElem.options,
+                i = 0;
+
+            for(i; i < optionNodes.length; i++) {
+                choices.push(optionNodes.item(i).text);
+            }
+        }
+        
+        var baseType = htmlElem.tagName.toLowerCase();
+        
+        switch(baseType) {
+            //Add new emmpty elements above this one so they fall thru to returning true
+            case "select":  return {
+                                hasNativeUi : true,
+                                type : htmlElem.attributes.multiple ? baseType + "-multiple" : baseType + "-single",
+                                choices : getSelectChoices(),
+                                callback : function(evtData) {
+                                    var newIndex = evtData.selectedIndices[0], //we only care about a the first item in a single select scenario
+                                        oldIndex = htmlElem.selectedIndex,
+                                        change;
+                                    
+                                    if(oldIndex !== newIndex && htmlElem) {
+                                        //Assign the new index to the list
+                                        htmlElem.selectedIndex = newIndex;
+                                        
+                                        change = document.createEvent("HTMLEvents");
+                                        change.initMouseEvent("change", true, true);
+                                        htmlElem.dispatchEvent(change);
+                                    }
+                                }
+                            };
+            
+            default:        return { hasNativeUi : false};
+        }
+    },
 
     /* Handle the press from the trackpad */
     onTrackpadDown : function() {
-        if (navigationController.currentFocused == null)
+        if (!navigationController.currentFocused) {
             return;
+        }
+        
+        var focus = navigationController.currentFocused,     //Closure the current focus
+            mousedown = document.createEvent("MouseEvents"),
+            cancelled,
+            nativeInfo;
 
-        // Now send the DOM event
-        var mousedown = document.createEvent("MouseEvents");
-        mousedown.initMouseEvent("mousedown", true, true, window, 0, navigationController.currentFocused.rect.x,
-                navigationController.currentFocused.rect.y, 1, 1, false, false, false, false, 0, null);
-        navigationController.currentFocused.element.dispatchEvent(mousedown);
+        // Now send the DOM event and see if any listeners preventDefault()
+        mousedown.initMouseEvent("mousedown", true, true, window, 0, focus.rect.x,
+                focus.rect.y, 1, 1, false, false, false, false, 0, null);
+        cancelled = !focus.element.dispatchEvent(mousedown);
+        
+        //Certain controls will have their default click UI handled natively
+        nativeInfo = this.getNativeInfoForControl(focus.element);
+        if(!cancelled && nativeInfo.hasNativeUi) {
+            blackberry.focus.htmlAsk(nativeInfo.type, nativeInfo.choices, nativeInfo.callback);
+        }
     },
 
     /* Handle the "release" of the press from the trackpad */
     onTrackpadUp : function() {
-        if (navigationController.currentFocused == null)
+        if (navigationController.currentFocused === null) {
             return;
-
+        }
+        
         try {
             // Now send the mouseup DOM event
             var mouseup = document.createEvent("MouseEvents");
@@ -1264,6 +1316,11 @@ bbNav = {
         blackberry.focus.getPriorFocus = navigationController.getPriorFocus;
         blackberry.focus.setFocus = navigationController.setFocus;
         blackberry.focus.focusOut = navigationController.focusOut;
+        
+        if(blackberry.ui) {
+            blackberry.focus.htmlAsk = blackberry.ui.dialog.selectAsync;
+        }
+        
         navigationController.initialize(data);
     }
 }
