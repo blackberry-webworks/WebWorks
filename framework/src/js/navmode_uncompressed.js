@@ -233,6 +233,8 @@ navigationController = {
             for(i; i < optionNodes.length; i++) {
                 choices.push(optionNodes.item(i).text);
             }
+            
+            return choices;
         }
         
         var baseType = htmlElem.tagName.toLowerCase();
@@ -244,18 +246,30 @@ navigationController = {
                                 type : htmlElem.attributes.multiple ? baseType + "-multiple" : baseType + "-single",
                                 choices : getSelectChoices(),
                                 callback : function(evtData) {
-                                    var newIndex = evtData.selectedIndices[0], //we only care about a the first item in a single select scenario
-                                        oldIndex = htmlElem.selectedIndex,
-                                        change;
-                                    
-                                    if(oldIndex !== newIndex && htmlElem) {
-                                        //Assign the new index to the list
-                                        htmlElem.selectedIndex = newIndex;
-                                        
+                                    var isMultiSelect = evtData.length > 1,
+                                        i,
                                         change = document.createEvent("HTMLEvents");
-                                        change.initMouseEvent("change", true, true);
-                                        htmlElem.dispatchEvent(change);
+                                
+                                    if(isMultiSelect) {
+                                        for(i = 0; i < htmlElem.options.length; i++) {
+                                            htmlElem.options[i].selected = false;
+                                        }
+                                        
+                                        for(i = 0; i < evtData.length; i++) {
+                                            htmlElem.options[evtData[i]].selected = true;
+                                        }
+                                    } else {
+                                        var newIndex = evtData[0], //we only care about a the first item in a single select scenario
+                                            oldIndex = htmlElem.selectedIndex;
+
+                                        if(oldIndex !== newIndex) {
+                                            //Assign the new index to the list
+                                            htmlElem.selectedIndex = newIndex;
+                                        }
                                     }
+                                    
+                                    change.initEvent("change", true, true);
+                                    htmlElem.dispatchEvent(change);
                                 }
                             };
             
@@ -280,9 +294,9 @@ navigationController = {
         cancelled = !focus.element.dispatchEvent(mousedown);
         
         //Certain controls will have their default click UI handled natively
-        nativeInfo = this.getNativeInfoForControl(focus.element);
+        nativeInfo = navigationController.getNativeInfoForControl(focus.element);
         if(!cancelled && nativeInfo.hasNativeUi) {
-            blackberry.focus.htmlAsk(nativeInfo.type, nativeInfo.choices, nativeInfo.callback);
+            blackberry.ui.dialog.selectAsync(nativeInfo.type, nativeInfo.choices, nativeInfo.callback);
         }
     },
 
@@ -1316,10 +1330,6 @@ bbNav = {
         blackberry.focus.getPriorFocus = navigationController.getPriorFocus;
         blackberry.focus.setFocus = navigationController.setFocus;
         blackberry.focus.focusOut = navigationController.focusOut;
-        
-        if(blackberry.ui) {
-            blackberry.focus.htmlAsk = blackberry.ui.dialog.selectAsync;
-        }
         
         navigationController.initialize(data);
     }
