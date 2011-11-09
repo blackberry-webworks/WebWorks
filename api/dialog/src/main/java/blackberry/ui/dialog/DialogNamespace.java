@@ -52,6 +52,7 @@ public class DialogNamespace extends Scriptable {
 
         _fields.put( StandardAskFunction.NAME, new StandardAskFunction() );
         _fields.put( CustomAskFunction.NAME, new CustomAskFunction() );
+        _fields.put( SelectAsyncFunction.NAME, new SelectAsyncFunction() );
         _fields.put( D_OK, new Integer( Dialog.D_OK ) );
         _fields.put( D_SAVE, new Integer( Dialog.D_SAVE ) );
         _fields.put( D_DELETE, new Integer( Dialog.D_DELETE ) );
