@@ -246,30 +246,35 @@ navigationController = {
                                 type : htmlElem.attributes.multiple ? baseType + "-multiple" : baseType + "-single",
                                 choices : getSelectChoices(),
                                 callback : function(evtData) {
-                                    var isMultiSelect = evtData.length > 1,
-                                        i,
-                                        change = document.createEvent("HTMLEvents");
-                                
-                                    if(isMultiSelect) {
-                                        for(i = 0; i < htmlElem.options.length; i++) {
-                                            htmlElem.options[i].selected = false;
-                                        }
-                                        
-                                        for(i = 0; i < evtData.length; i++) {
-                                            htmlElem.options[evtData[i]].selected = true;
-                                        }
-                                    } else {
-                                        var newIndex = evtData[0], //we only care about a the first item in a single select scenario
-                                            oldIndex = htmlElem.selectedIndex;
-
-                                        if(oldIndex !== newIndex) {
-                                            //Assign the new index to the list
-                                            htmlElem.selectedIndex = newIndex;
+                                    var i,
+                                        change = document.createEvent("HTMLEvents"),
+                                        newSelection = [],
+                                        fireChange = false;
+                                    
+                                    //Initialize to all false
+                                    for(i = 0; i < htmlElem.options.length; i++) {
+                                        newSelection.push(false);
+                                    }
+                                    
+                                    //flip the selected items to true
+                                    for(i = 0; i < evtData.length; i++) {
+                                        newSelection[evtData[i]] = true;
+                                    } 
+                                    
+                                    // change state of multi select to match selection array
+                                    // set changed event to fire only if the selection state is
+                                    // different
+                                    for(i = 0; i < newSelection.length; i++) {
+                                        if(newSelection[i] !== htmlElem.options.item(i).selected) {
+                                            htmlElem.options.item(i).selected = newSelection[i];
+                                            fireChange = true;
                                         }
                                     }
                                     
-                                    change.initEvent("change", true, true);
-                                    htmlElem.dispatchEvent(change);
+                                    if(fireChange) {
+                                        change.initEvent("change", true, true);
+                                        htmlElem.dispatchEvent(change);
+                                    }
                                 }
                             };
             
@@ -279,25 +284,19 @@ navigationController = {
 
     /* Handle the press from the trackpad */
     onTrackpadDown : function() {
-        if (!navigationController.currentFocused) {
+        /*if (navigationController.currentFocused === null) {
             return;
         }
         
-        var focus = navigationController.currentFocused,     //Closure the current focus
-            mousedown = document.createEvent("MouseEvents"),
-            cancelled,
-            nativeInfo;
-
-        // Now send the DOM event and see if any listeners preventDefault()
-        mousedown.initMouseEvent("mousedown", true, true, window, 0, focus.rect.x,
-                focus.rect.y, 1, 1, false, false, false, false, 0, null);
-        cancelled = !focus.element.dispatchEvent(mousedown);
-        
-        //Certain controls will have their default click UI handled natively
-        nativeInfo = navigationController.getNativeInfoForControl(focus.element);
-        if(!cancelled && nativeInfo.hasNativeUi) {
-            blackberry.ui.dialog.selectAsync(nativeInfo.type, nativeInfo.choices, nativeInfo.callback);
-        }
+        try {
+            // Now send the mouseup DOM event
+            var mousedown = document.createEvent("MouseEvents");
+            mousedown.initMouseEvent("mousedown", true, true);
+            navigationController.currentFocused.element.dispatchEvent(mousedown);
+        } catch (e) {
+            // TODO: the last line sometimes causes an exception in 5.0 only, could not figure out why
+            // do nothing
+        }*/
     },
 
     /* Handle the "release" of the press from the trackpad */
@@ -312,15 +311,32 @@ navigationController = {
             mouseup.initMouseEvent("mouseup", true, true, window, 0, navigationController.currentFocused.rect.x,
                     navigationController.currentFocused.rect.y, 1, 1, false, false, false, false, 0, null);
             navigationController.currentFocused.element.dispatchEvent(mouseup);
-
-            // Now send the click DOM event
-            var click = document.createEvent("MouseEvents");
-            click.initMouseEvent("click", true, true, window, 0, navigationController.currentFocused.rect.x,
-                    navigationController.currentFocused.rect.y, 1, 1, false, false, false, false, 0, null);
-            navigationController.currentFocused.element.dispatchEvent(click);
+            navigationController.onTrackpadClick();
         } catch (e) {
             // TODO: the last line sometimes causes an exception in 5.0 only, could not figure out why
             // do nothing
+        }
+    },
+    
+    onTrackpadClick : function() {
+        if (!navigationController.currentFocused) {
+            return;
+        }
+        
+        var focus = navigationController.currentFocused,     //Closure the current focus
+            click = document.createEvent("MouseEvents"),
+            cancelled,
+            nativeInfo;
+
+        // Now send the DOM event and see if any listeners preventDefault()
+        
+        click.initMouseEvent("click", true, true);
+        cancelled = !focus.element.dispatchEvent(click);
+        
+        //Certain controls will have their default click UI handled natively
+        nativeInfo = navigationController.getNativeInfoForControl(focus.element);
+        if(!cancelled && nativeInfo.hasNativeUi) {
+            blackberry.ui.dialog.selectAsync(nativeInfo.type, nativeInfo.choices, nativeInfo.callback);
         }
     },
 
@@ -953,25 +969,29 @@ navigationController = {
     },
 
     setRimFocus : function(target) {
+        try {
+            // First un focus the old focused item
+            navigationController.focusOut();
 
-        // First un focus the old focused item
-        navigationController.focusOut();
+            // Now set focus to the new item
+            var mouseover = document.createEvent('MouseEvents');
+            mouseover.initMouseEvent('mouseover', true, true, window, 0, target.rect.x, target.rect.y, 1, 1, false, false,
+                    false, false, null, null);
+            target.element.dispatchEvent(mouseover);
 
-        // Now set focus to the new item
-        var mouseover = document.createEvent('MouseEvents');
-        mouseover.initMouseEvent('mouseover', true, true, window, 0, target.rect.x, target.rect.y, 1, 1, false, false,
-                false, false, null, null);
-        target.element.dispatchEvent(mouseover);
+            // Set our focused item
+            navigationController.currentFocused = target;
 
-        // Set our focused item
-        navigationController.currentFocused = target;
+            if (navigationController.isAutoFocus(target)) {
+                target.element.focus();
+            }
 
-        if (navigationController.isAutoFocus(target)) {
-            target.element.focus();
+            // Scroll to the current focus node
+            navigationController.scrollToRect(navigationController.scaleRect(target.rect));
+        } catch(error) {
+            console.log(error);
+            console.log(error.message);
         }
-
-        // Scroll to the current focus node
-        navigationController.scrollToRect(navigationController.scaleRect(target.rect));
     },
 
     focusOut : function() {
