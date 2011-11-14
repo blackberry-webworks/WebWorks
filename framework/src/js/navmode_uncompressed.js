@@ -19,7 +19,7 @@ navigationController = {
 
     SAFE_MARGIN : 30,
     SUPPRESS_NAVIGATION_INPUT_TYPES : '|checkbox|radio|button|',
-    AUTO_FOCUS_INPUT_TYPES : '|color|date|month|time|week|email|number|password|search|text|url|',
+    AUTO_FOCUS_INPUT_TYPES : '|color|date|month|time|week|email|number|password|search|text|url|tel|',
     REQUIRE_CLICK_INPUT_TYPES : '|file|',
     querySelector : 'textarea:not([x-blackberry-focusable=false]),a:not([x-blackberry-focusable=false]),input:not([x-blackberry-focusable=false]),select:not([x-blackberry-focusable=false]),button:not([x-blackberry-focusable=false]),[x-blackberry-focusable=true]',
 
