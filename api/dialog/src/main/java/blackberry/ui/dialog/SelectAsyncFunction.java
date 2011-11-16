@@ -17,18 +17,13 @@ package blackberry.ui.dialog;
 
 import net.rim.device.api.script.Scriptable;
 import net.rim.device.api.script.ScriptableFunction;
-import net.rim.device.api.system.Bitmap;
-import net.rim.device.api.ui.UiApplication;
-import net.rim.device.api.ui.component.BitmapField;
-import net.rim.device.api.ui.component.Dialog;
-import net.rim.device.api.ui.container.DialogFieldManager;
 import blackberry.core.FunctionSignature;
 import blackberry.core.ScriptableFunctionBase;
 
 /**
  * Implementation of asynchronous selection dialog
  * 
- * @author dmeng
+ * @author jachoi
  * 
  */
 public class SelectAsyncFunction extends ScriptableFunctionBase {
@@ -42,10 +37,8 @@ public class SelectAsyncFunction extends ScriptableFunctionBase {
 		String type;
 		String[] choices;
 		int[] values;
-		int defaultChoice = 0;
-		boolean global = false;
 
-		// select type: 'single' or 'multiple'
+		// select type: 'select-single' or 'select-multiple'
 		type = (String) args[0];
 
 		// choices & values
@@ -61,12 +54,11 @@ public class SelectAsyncFunction extends ScriptableFunctionBase {
 		ScriptableFunction callback = (ScriptableFunction) args[2];
 
 		// create dialog
-		Dialog d = new Dialog("", choices, values, defaultChoice,
-				null /* bitmap */, global ? Dialog.GLOBAL_STATUS : 0 /* style */);
+		SelectDialog d = new SelectDialog(type, choices);
 		SelectDialogRunner currentDialog = new SelectDialogRunner(d, callback);
 
 		// queue
-		UiApplication.getUiApplication().invokeLater(currentDialog);
+		new Thread(currentDialog).start();
 
 		// return value
 		return null;
@@ -87,9 +79,19 @@ public class SelectAsyncFunction extends ScriptableFunctionBase {
 	}
 
 	private static class SelectDialogRunner implements Runnable {
-		private Dialog _dialog;
+	    private SelectDialog _dialog;
 		private ScriptableFunction _callback;
-
+		
+		Object dialogLockObj = new Object();
+		
+        DialogListener dcl = new DialogListener() {
+            public void onDialogClosed( int[] choice ) {
+                synchronized( dialogLockObj ) {
+                    dialogLockObj.notifyAll();
+                }
+            }
+        };
+		
 		/**
 		 * Constructs a <code>DialogRunner</code> object.
 		 * 
@@ -98,38 +100,41 @@ public class SelectAsyncFunction extends ScriptableFunctionBase {
 		 * @param callback
 		 *            The onSelect callback
 		 */
-		public SelectDialogRunner(Dialog dialog, ScriptableFunction callback) {
+		public SelectDialogRunner(SelectDialog dialog, ScriptableFunction callback) {
 			_dialog = dialog;
 			_callback = callback;
-			Bitmap bitmap = Bitmap.getPredefinedBitmap(Bitmap.QUESTION);
-			setIcon(bitmap);
 		}
+		
 
 		/**
 		 * Run the dialog.
 		 * 
 		 * @see java.lang.Runnable#run()
 		 */
-		public void run() {
-			int ret = _dialog.doModal();
+		public void run() { 
+		    _dialog.setDialogListener( dcl );
+		    _dialog.display();
+
 			try {
-				_callback.invoke(_callback,
-						new Object[] { new Integer[] { new Integer(ret) } });
+			   synchronized (dialogLockObj) {
+		          dialogLockObj.wait();
+		      }
+			   int[] ret = _dialog.getResponse();
+				_callback.invoke(_callback, new Object[] { intToObjectArray(ret) } );
 			} catch (Exception e) {
 				throw new RuntimeException("Invoke callback failed");
 			}
 		}
-
-		private void setIcon(Bitmap image) {
-			BitmapField field = null;
-			if (image != null) {
-				field = new BitmapField(null, BitmapField.VCENTER
-						| BitmapField.STAMP_MONOCHROME);
-				field.setBitmap(image);
-			}
-			DialogFieldManager dfm = (DialogFieldManager) _dialog.getDelegate();
-			dfm.setIcon(field);
+		
+		public Integer[] intToObjectArray(int[] ret) {
+		    
+		    int index;
+		    Integer[] intObjArray = new Integer[ret.length];
+		    for (index = 0; index < ret.length; index++) {
+		        intObjArray[index] = new Integer( ret[index] );
+		    }
+		    
+		    return intObjArray;
 		}
 	}
-
 }
