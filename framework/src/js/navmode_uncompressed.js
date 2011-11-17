@@ -223,64 +223,6 @@ navigationController = {
 
         navigationController.lastDirection = navigationController.currentDirection;
     },
-    
-    getNativeInfoForControl : function(htmlElem) {
-        function getSelectChoices() {
-            var choices = [],
-                optionNodes = htmlElem.options,
-                i = 0;
-
-            for(i; i < optionNodes.length; i++) {
-                choices.push(optionNodes.item(i).text);
-            }
-            
-            return choices;
-        }
-        
-        var baseType = htmlElem.tagName.toLowerCase();
-        
-        switch(baseType) {
-            //Add new emmpty elements above this one so they fall thru to returning true
-            case "select":  return {
-                                hasNativeUi : true,
-                                type : htmlElem.attributes.multiple ? baseType + "-multiple" : baseType + "-single",
-                                choices : getSelectChoices(),
-                                callback : function(evtData) {
-                                    var i,
-                                        change = document.createEvent("HTMLEvents"),
-                                        newSelection = [],
-                                        fireChange = false;
-                                    
-                                    //Initialize to all false
-                                    for(i = 0; i < htmlElem.options.length; i++) {
-                                        newSelection.push(false);
-                                    }
-                                    
-                                    //flip the selected items to true
-                                    for(i = 0; i < evtData.length; i++) {
-                                        newSelection[evtData[i]] = true;
-                                    } 
-                                    
-                                    // change state of multi select to match selection array
-                                    // set changed event to fire only if the selection state is
-                                    // different
-                                    for(i = 0; i < newSelection.length; i++) {
-                                        if(newSelection[i] !== htmlElem.options.item(i).selected) {
-                                            htmlElem.options.item(i).selected = newSelection[i];
-                                            fireChange = true;
-                                        }
-                                    }
-                                    
-                                    if(fireChange) {
-                                        change.initEvent("change", true, true);
-                                        htmlElem.dispatchEvent(change);
-                                    }
-                                }
-                            };
-            
-            default:        return { hasNativeUi : false};
-        }
-    },
 
     /* Handle the press from the trackpad */
     onTrackpadDown : function() {
@@ -329,15 +271,68 @@ navigationController = {
             nativeInfo;
 
         // Now send the DOM event and see if any listeners preventDefault()
-        
-        click.initMouseEvent("click", true, true);
+        //click.initMouseEvent("click", true, true, window, 0, navigationController.currentFocused.rect.x, navigationController.currentFocused.rect.y, 1, 1, false, false, false, false, 0, null);
+        click.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
         cancelled = !focus.element.dispatchEvent(click);
         
-        //Certain controls will have their default click UI handled natively
-        nativeInfo = navigationController.getNativeInfoForControl(focus.element);
-        if(!cancelled && nativeInfo.hasNativeUi) {
-            blackberry.ui.dialog.selectAsync(nativeInfo.type, nativeInfo.choices, nativeInfo.callback);
+        if(!cancelled) {
+            //By convention we'll define a handler for each tag with a native UI at navigationController.tagName
+            if(typeof(navigationController[focus.element.tagName] === "function")) {
+                navigationController[focus.element.tagName](focus.element);
+            }
         }
+    },
+    
+    SELECT: function(htmlElem) {
+        //We'll stick our event handler at on[tagName]
+        navigationController.onSELECT = function(evtData) {
+                                    var i,
+                                        change = document.createEvent("HTMLEvents"),
+                                        newSelection = [],
+                                        fireChange = false;
+                                    
+                                    //Initialize to all false
+                                    for(i = 0; i < htmlElem.options.length; i++) {
+                                        newSelection.push(false);
+                                    }
+                                    
+                                    //flip the selected items to true
+                                    for(i = 0; i < evtData.length; i++) {
+                                        newSelection[evtData[i]] = true;
+                                    } 
+                                    
+                                    // change state of multi select to match selection array
+                                    // set changed event to fire only if the selection state is
+                                    // different
+                                    for(i = 0; i < newSelection.length; i++) {
+                                        if(newSelection[i] !== htmlElem.options.item(i).selected) {
+                                            htmlElem.options.item(i).selected = newSelection[i];
+                                            fireChange = true;
+                                        }
+                                    }
+                                    
+                                    if(fireChange) {
+                                        change.initEvent("change", true, true);
+                                        htmlElem.dispatchEvent(change);
+                                    }
+                                };
+        
+        function getSelectChoices() {
+            var choices = [],
+                optionNodes = htmlElem.options,
+                i = 0;
+
+            for(i; i < optionNodes.length; i++) {
+                choices.push(optionNodes.item(i).text);
+            }
+            
+            return choices;
+        };
+        
+        navigationController.handleSelect(
+            typeof(htmlElem.attributes.multiple) !== "undefined" ? "select-multiple" : "select-single", 
+            getSelectChoices()
+        );
     },
 
     /* See if the passed in element is still in our focusable list */
@@ -1350,6 +1345,8 @@ bbNav = {
         blackberry.focus.getPriorFocus = navigationController.getPriorFocus;
         blackberry.focus.setFocus = navigationController.setFocus;
         blackberry.focus.focusOut = navigationController.focusOut;
+        
+        navigationController.handleSelect = blackberry.ui.dialog.selectAsync;
         
         navigationController.initialize(data);
     }
