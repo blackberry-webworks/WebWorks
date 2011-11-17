@@ -18,8 +18,12 @@ package blackberry.ui.dialog;
 import net.rim.device.api.script.ScriptEngine;
 import net.rim.device.api.script.Scriptable;
 import net.rim.device.api.script.ScriptableFunction;
+import net.rim.device.api.ui.UiApplication;
+
 import blackberry.core.FunctionSignature;
 import blackberry.core.ScriptableFunctionBase;
+
+import blackberry.common.util.json4j.JSONArray;
 
 /**
  * Implementation of asynchronous selection dialog
@@ -29,118 +33,115 @@ import blackberry.core.ScriptableFunctionBase;
  */
 public class SelectAsyncFunction extends ScriptableFunctionBase {
 
-        public static final String NAME = "selectAsync";
-        private ScriptEngine _scriptEngine;
+    public static final String NAME = "selectAsync";
+    private ScriptEngine _scriptEngine;
+    
+    public SelectAsyncFunction(ScriptEngine se) {
+        _scriptEngine = se;
+    }
+
+    /**
+     * @see blackberry.core.ScriptableFunctionBase#execute(Object, Object[])
+     */
+    public Object execute(Object thiz, Object[] args) throws Exception {
+        boolean allowMultiple = ((Boolean) args[0]).booleanValue();
+        Scriptable choices = (Scriptable) args[1];
+        String callback = (String) args[2] ;
         
-        public SelectAsyncFunction(ScriptEngine se) {
-            _scriptEngine = se;
+        int numChoices = choices.getElementCount();
+        String[] labels = new String[numChoices];
+        boolean[] enabled = new boolean[numChoices];
+        boolean[] selected = new boolean[numChoices];
+        
+        populateChoiceStateArrays(choices, labels, enabled, selected);
+
+        // create dialog
+        SelectDialog d = new SelectDialog(allowMultiple, labels, enabled, selected);
+        SelectDialogRunner currentDialog = new SelectDialogRunner(d, _scriptEngine, callback);
+
+        // queue
+        UiApplication.getUiApplication().invokeLater(currentDialog);
+
+        // return value
+        return Scriptable.UNDEFINED;
+    }
+    
+    private void populateChoiceStateArrays(Scriptable fromScriptableChoices, String[] labels, boolean[] enabled, boolean[] selected) {
+        try {
+            for(int i = 0; i < fromScriptableChoices.getElementCount(); i++) {
+                Scriptable choice = (Scriptable)fromScriptableChoices.getElement(i);
+                labels[i] = (String)choice.getField("label");
+                enabled[i] = ((Boolean)choice.getField("enabled")).booleanValue();
+                selected[i] = ((Boolean)choice.getField("selected")).booleanValue();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
         }
+    }
+
+    /**
+     * @see blackberry.core.ScriptableFunctionBase#getFunctionSignatures()
+     */
+    protected FunctionSignature[] getFunctionSignatures() {
+        FunctionSignature fs = new FunctionSignature(3);
+        // allowMultiple
+        fs.addParam(Boolean.class, true);
+        // choices
+        fs.addParam(Scriptable.class, true);
+        //callback
+        fs.addParam(String.class, true);
+        
+        return new FunctionSignature[] { fs };
+    }
+
+    private static class SelectDialogRunner implements Runnable {
+        private SelectDialog _dialog;
+        private ScriptEngine _se;
+        private String _callback;
+            
+        /**
+         * Constructs a <code>DialogRunner</code> object.
+         * 
+         * @param dialog
+         *            The dialog
+         * @param callback
+         *            The onSelect callback
+         */
+        SelectDialogRunner(SelectDialog dialog, ScriptEngine se, String callback) {
+                _dialog = dialog;
+                _se = se;
+                _callback = callback;
+        }
+        
 
         /**
-         * @see blackberry.core.ScriptableFunctionBase#execute(Object, Object[])
+         * Run the dialog.
+         * 
+         * @see java.lang.Runnable#run()
          */
-        public Object execute(Object thiz, Object[] args) throws Exception {
-                String type;
-                String[] choices;
-                int[] values;
-
-                // select type: 'select-single' or 'select-multiple'
-                type = (String) args[0];
-
-                // choices & values
-                Scriptable stringArray = (Scriptable) args[1];
-                int count = stringArray.getElementCount();
-                choices = new String[count];
-                values = new int[count];
-                for (int i = 0; i < count; i++) {
-                        choices[i] = stringArray.getElement(i).toString();
-                        values[i] = i;
-                }
-
-                // create dialog
-                SelectDialog d = new SelectDialog(type, choices);
-                SelectDialogRunner currentDialog = new SelectDialogRunner(d, _scriptEngine);
-
-                // queue
-                new Thread(currentDialog).start();
-
-                // return value
-                return null;
-        }
-
-        /**
-         * @see blackberry.core.ScriptableFunctionBase#getFunctionSignatures()
-         */
-        protected FunctionSignature[] getFunctionSignatures() {
-                FunctionSignature fs = new FunctionSignature(3);
-                // message
-                fs.addParam(String.class, true);
-                // choices
-                fs.addParam(Scriptable.class, true);
-                return new FunctionSignature[] { fs };
-        }
-
-        private static class SelectDialogRunner implements Runnable {
-            private SelectDialog _dialog;
-            private ScriptEngine _se;
-                
-                Object dialogLockObj = new Object();
-                
-        DialogListener dcl = new DialogListener() {
-            public void onDialogClosed( int[] choice ) {
-                synchronized( dialogLockObj ) {
-                    dialogLockObj.notifyAll();
+        public void run() { 
+            UiApplication.getUiApplication().pushModalScreen(_dialog);
+            
+            int[] newSelectedItems = _dialog.getResponse();
+            
+            if(newSelectedItems != null) {
+                try {
+                    final String jsCallbackArgs = (new JSONArray(boxIntArray(newSelectedItems))).toString();
+                    _se.executeScript(_callback + "(" + jsCallbackArgs + ");", null);
+                } catch (Exception e) {
+                    throw new RuntimeException("Invoke callback failed: " + e.getMessage());
                 }
             }
-        };
-                
-                /**
-                 * Constructs a <code>DialogRunner</code> object.
-                 * 
-                 * @param dialog
-                 *            The dialog
-                 * @param callback
-                 *            The onSelect callback
-                 */
-                public SelectDialogRunner(SelectDialog dialog, ScriptEngine se) {
-                        _dialog = dialog;
-                        _se = se;
-                }
-                
-
-                /**
-                 * Run the dialog.
-                 * 
-                 * @see java.lang.Runnable#run()
-                 */
-                public void run() { 
-                    _dialog.setDialogListener( dcl );
-                    _dialog.display();
-
-                        try {
-                           synchronized (dialogLockObj) {
-                                dialogLockObj.wait();
-                           }
-                           final int[] ret = _dialog.getResponse();
-                           final String jsCallbackArgs = intToArgsString(ret);
-                           
-                           _se.executeScript("navigationController.onSELECT(" + jsCallbackArgs + ");", null);
-                        } catch (Exception e) {
-                                throw new RuntimeException("Invoke callback failed");
-                        }
-                }
-                
-                public String intToArgsString(int[] ret) {
-                    String argsStr = "[";
-                    
-                    for(int i = 0; i < ret.length; i++) {
-                        argsStr += ret[i];
-                        if(i < ret.length - 1) {
-                            argsStr += ",";
-                        }
-                    }
-                    
-                    return argsStr + "]";
-                }
         }
+        
+        private Integer[] boxIntArray(int[] ints) {
+            Integer[] boxed = new Integer[ints.length];
+            
+            for(int i = 0; i < ints.length; i++) {
+                boxed[i] = new Integer(ints[i]);
+            }
+            
+            return boxed;
+        }
+    }
 }

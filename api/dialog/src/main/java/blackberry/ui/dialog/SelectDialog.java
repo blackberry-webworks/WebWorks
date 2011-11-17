@@ -90,43 +90,8 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
         addInputSettings( inputSettings );
     }
 
-    public void setDialogListener( DialogListener dialogListener ) {
-        _closeListener = dialogListener;
-    }
-
-    public void display() {
-        new Thread( new Runnable() {
-            public void run() {
-                UiApplication.getUiApplication().invokeLater( new Runnable() {
-                    public void run() {
-                        UiApplication.getUiApplication().pushScreen( _thisDialog );
-                    }
-                } );
-                while( _response == null )
-                    try {
-                        Thread.sleep( 250 );
-                    } catch( InterruptedException e ) {
-                        e.printStackTrace();
-                    }
-
-                UiApplication.getUiApplication().invokeLater( new Runnable() {
-                    public void run() {
-                        UiApplication.getUiApplication().popScreen( _thisDialog );
-                    }
-                } );
-                close();
-            }
-        } ).start();
-    }
-
     public int[] getResponse() {
         return _response;
-    }
-
-    public void close() {
-        if( _closeListener != null ) {
-            _closeListener.onDialogClosed( _response );
-        }
     }
 
     public void fieldChanged( Field field, int arg1 ) {
@@ -150,6 +115,8 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
         } else {
             _response = new int[] { _selectedIndex };
         }
+        
+        close();
     }
 
     private void updateCurrentSelection( char keyChar ) {
@@ -262,7 +229,7 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
                 }
             } else {
                 if( listItem.isSelected() ) {
-                    graphics.drawText( '\u2714' + "   " + listItem.toString(), 0, y, 0, width );
+                    graphics.drawText( '\u2713' + "   " + listItem.toString(), 0, y, 0, width );
                 } else {
                     graphics.drawText( "      " + listItem.toString(), 0, y, 0, width );
                 }
