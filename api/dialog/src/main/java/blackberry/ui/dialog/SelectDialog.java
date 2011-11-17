@@ -1,9 +1,13 @@
 package blackberry.ui.dialog;
 
+import net.rim.device.api.system.Characters;
+import net.rim.device.api.system.Display;
 import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.TouchEvent;
+import net.rim.device.api.ui.TouchGesture;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.CheckboxField;
@@ -17,42 +21,55 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener, Li
     private SelectDialog thisDialog;
     private ButtonField doneButton;
     private CheckboxField[] checkboxFieldList;
+    private VerticalFieldManager _vfm;
+    private ListItem[] _listItem;
     
     private int choiceLength = 0;
     private int[] _response = null;
-    
-    private final String TYPE_SINGLE = "select-single";
-    private final String TYPE_MULITPLE = "select-multiple";
     
     private DialogListener _closeListener;
     
     private ListField listChoices;
     private String[] _choices;
-    private String _type;
+    private boolean _allowMultiple;
     
-    public SelectDialog( String type, String[] choice ) {
-        super( new VerticalFieldManager(), Field.FOCUSABLE );
-        choiceLength = choice.length;
+    public SelectDialog(boolean allowMultiple, String[] labels, boolean[] enableds, boolean[] selecteds) {
+        super( new PopupDelegate(allowMultiple) );
+        choiceLength = labels.length;
         thisDialog = this;
-        _choices = choice;
-        _type = type;
+        _choices = labels;
+        _allowMultiple = allowMultiple;
+        
+        
+        _vfm = new VerticalFieldManager( NO_HORIZONTAL_SCROLL | NO_HORIZONTAL_SCROLLBAR | VERTICAL_SCROLL | VERTICAL_SCROLLBAR );
+        
+        _listItem = new ListItem[choiceLength];
+        for (int index = 0; index < choiceLength; index++) {
+            _listItem[index] = new ListItem(labels[index], false);
+        }
 
         int numChoices = 0;
-        if( type.equals( TYPE_MULITPLE ) ) {
+        if( _allowMultiple ) {
             doneButton = new ButtonField( "DONE", Field.FIELD_HCENTER );
             doneButton.setChangeListener( this );
 
-            checkboxFieldList = new CheckboxField[ choice.length ];
-            for( numChoices = 0; numChoices < choice.length; numChoices++ ) {
-                checkboxFieldList[ numChoices ] = new CheckboxField( choice[ numChoices ], false );
-                add( checkboxFieldList[ numChoices ] );
+            checkboxFieldList = new CheckboxField[ choiceLength ];
+            for( numChoices = 0; numChoices < choiceLength; numChoices++ ) {
+                if ( _listItem[numChoices].isSelected() ) {
+                    checkboxFieldList[ numChoices ] = new CheckboxField( " " + _listItem[numChoices].toString(), true );
+                } else {
+                    checkboxFieldList[ numChoices ] = new CheckboxField( " " + _listItem[numChoices].toString(), false );
+                }
+                _vfm.add( checkboxFieldList[ numChoices ] );
             }
+            add(_vfm);
             add( new SeparatorField() );
             add( doneButton );
-        } else if( type.equals( TYPE_SINGLE ) ) {
-            listChoices = new ListField( choice.length );
+        } else if( !_allowMultiple ) {
+            listChoices = new ListField( choiceLength );
             listChoices.setCallback( this );
-            add( listChoices );
+            _vfm.add( listChoices );
+            add(_vfm);
         }
     }
 
@@ -120,7 +137,7 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener, Li
     }
 
     protected boolean navigationClick( int status, int time ) {
-        if( _type.equals( TYPE_SINGLE ) ) {
+        if( !_allowMultiple ) {
             _response = new int[] { listChoices.getSelectedIndex() };
         }
         return super.navigationClick( status, time );
@@ -137,10 +154,149 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener, Li
     }
 
     public int getPreferredWidth( ListField arg0 ) {
-        return 0;
+        return Display.getWidth();
     }
 
     public int indexOfList( ListField arg0, String arg1, int arg2 ) {
-        return 0;
+        return -1;
+    }
+    
+    private void updateCurrentSelection(char keyChar) {
+        // Ensure we were passed a valid key to locate.
+        if( keyChar == '\u0000' ) {
+            return;
+        }
+    }
+      
+    /* @Override */ 
+    protected boolean touchEvent( TouchEvent message ) {
+        switch (message.getEvent()) {
+            case TouchEvent.GESTURE:
+                if ( _allowMultiple && message.getGesture().getEvent() == TouchGesture.NAVIGATION_SWIPE ) {
+                    int swipeDirection = message.getGesture().getSwipeDirection();
+                    Field field = getLeafFieldWithFocus();
+                    if( field instanceof ListField ) {
+                        switch( swipeDirection ) {
+                            case TouchGesture.SWIPE_EAST:
+                                doneButton.setFocus();
+                                return true;
+                        }
+                    } else if ( field instanceof ButtonField ) {
+                        switch( swipeDirection ) {
+                            case TouchGesture.SWIPE_NORTH:
+                            case TouchGesture.SWIPE_WEST:
+                                listChoices.setFocus();
+                                listChoices.setSelectedIndex( 1 );// Set to previously selected index );
+                                return true;
+                        }
+                    }
+                } 
+        }
+        return super.touchEvent(message);
+    }    
+
+    /* @Override */ 
+    protected boolean keyChar(char c, int status, int time) {
+        switch ( c ) {
+            case Characters.ENTER:
+                return true;
+            case  Characters.ESCAPE:
+                close();
+                return true;
+            default:
+                updateCurrentSelection( c );
+                break;
+        }
+        return super.keyChar( c, status, time );
+    }
+    
+    /*
+     * Store choice information.
+     */
+    private static final class ListItem {
+        private final String _label;
+        private boolean _selected;
+        
+        public ListItem(String label, boolean selected) {
+            _label = label;
+            _selected = selected;
+        }
+        
+        /* @Override */ 
+        public String toString() {
+            return _label;
+        }
+        
+        public void setSelected( boolean value ) {
+            _selected = value;
+        }
+
+        public boolean isSelected() {
+            return _selected;
+        }
+    }
+    
+    /*
+     * Handle the popup dialog layout.
+     */
+    private static class PopupDelegate extends VerticalFieldManager {
+        boolean _multiple;
+        
+        PopupDelegate( boolean allowMultiple ) {
+            super( NO_VERTICAL_SCROLL | NO_VERTICAL_SCROLLBAR );
+            _multiple = allowMultiple;
+        }
+        
+        protected void sublayout( int maxWidth, int maxHeight ) {
+            int yPosition = 0;
+            int heightAvailable = maxHeight;
+            Field field = getField( 0 );
+            int numFields = getFieldCount();
+
+            // Layout the vertical field manager that contains the listField
+            layoutChild(field, maxWidth, heightAvailable);
+            setPositionChild(field, 0, 0);
+            
+            boolean heightCheck; // Done button may not fit properly because of the font size and we need to take its height into account
+            if ( _multiple ) {
+                Field button = getField( numFields - 1 );
+                layoutChild( button, maxWidth, heightAvailable);
+                heightCheck = field.getHeight() < heightAvailable - 6 - button.getHeight(); //6 is for VSF height + SF height
+            } else {
+                heightCheck = field.getHeight() < heightAvailable;
+            }
+           
+            if ( heightCheck ) { 
+                // manager is taking less space then the total space available.
+                // so call super which takes care of adjusting the popupscreen height
+                super.sublayout( maxWidth, maxHeight );
+            }    
+            else {
+                // start laying out fields in reverse order so that the remaining 
+                // height can be given to the listField container.
+                for(int index = numFields - 1; index >= 0; index--) {
+                    field = getField( index );
+                    if(field instanceof VerticalFieldManager) {
+                        break;
+                    } else {
+                        layoutChild(field, maxWidth, heightAvailable);
+                        yPosition += field.getHeight();
+                        //Center the Done button
+                        if(field.isStyle(Field.FIELD_HCENTER)) {
+                            setPositionChild(field, (maxWidth - field.getWidth() + 1) >> 1, maxHeight - yPosition);
+                        } else {
+                            setPositionChild(field, 0, maxHeight - yPosition);
+                        }
+                        heightAvailable -= field.getHeight();
+                    }
+                }
+
+                // Layout listField container with remaining height
+                layoutChild(field, maxWidth, heightAvailable);
+        
+                setVirtualExtent( maxWidth, maxHeight );
+                setExtent( maxWidth, maxHeight );
+            } //else
+        } //sublayout
     }
 }
