@@ -323,15 +323,22 @@ navigationController = {
                 i = 0;
 
             for(i; i < optionNodes.length; i++) {
-                choices.push(optionNodes.item(i).text);
+                choices.push( 
+                    {   
+                        "label" : optionNodes.item(i).text,
+                        "enabled" : typeof(optionNodes.item(i).enabled) === "undefined" || optionNodes.item(i).enabled == true,
+                        "selected" : typeof(optionNodes.item(i).selected) === "undefined" || optionNodes.item(i).selected == true
+                    } 
+                );
             }
             
             return choices;
         };
         
         navigationController.handleSelect(
-            typeof(htmlElem.attributes.multiple) !== "undefined" ? "select-multiple" : "select-single", 
-            getSelectChoices()
+            typeof(htmlElem.attributes.multiple) !== "undefined" ? true : false, 
+            getSelectChoices(),
+            "navigationController.onSELECT"
         );
     },
 
