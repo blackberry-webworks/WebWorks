@@ -15,11 +15,14 @@
  */
 package blackberry.ui.dialog;
 
+import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.Characters;
 import net.rim.device.api.system.Display;
 import net.rim.device.api.ui.Color;
+import net.rim.device.api.ui.DrawStyle;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
+import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.TouchEvent;
 import net.rim.device.api.ui.TouchGesture;
@@ -32,6 +35,8 @@ import net.rim.device.api.ui.container.PopupScreen;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.input.InputSettings;
 import net.rim.device.api.ui.input.NavigationDeviceSettings;
+
+import blackberry.ui.dialog.SelectAsyncFunction;
 
 /**
  * Implementation of selection dialog
@@ -62,12 +67,14 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
         _allowMultiple = allowMultiple;
         _selectedIndex = -1;
 
+        
         _listItems = new ListItem[ _choiceLength ];
         for( int index = 0; index < _choiceLength; index++ ) {
             if( _selectedIndex == -1 && selecteds[ index ] && enableds[ index ] ) {
                 _selectedIndex = index;
             }
-            _listItems[ index ] = new ListItem( labels[ index ], enableds[ index ], selecteds[ index ] );
+            //TODO: Inserting default Item type of OPTION until we implement passing them from JS
+            _listItems[ index ] = new ListItem( labels[ index ], enableds[ index ], selecteds[ index ], SelectAsyncFunction.POPUP_ITEM_TYPE_OPTION );
         }
 
         _list = new SelectListField();
@@ -77,7 +84,7 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
         add( _vfm );
 
         if( _allowMultiple ) {
-            _doneButton = new ButtonField( "DONE", Field.FIELD_HCENTER );
+            _doneButton = new ButtonField( "Done", Field.FIELD_HCENTER );
             _doneButton.setChangeListener( this );
 
             add( new SeparatorField() );
@@ -170,7 +177,7 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
     }
 
     private final class SelectListField extends ListField implements ListFieldCallback {
-
+        private static final int PADDING = 10;
         public int _previousSelected = -1;
 
         SelectListField() {
@@ -217,22 +224,50 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
         }
 
         private void paintListItem( ListItem listItem, ListField listField, Graphics graphics, int index, int y, int width ) {
-            if( !listItem.isEnabled() ) {
-                graphics.setColor( Color.GRAY );
-            }
-
-            if( _allowMultiple ) {
-                if( listItem.isSelected() ) {
-                    graphics.drawText( '\u2611' + "   " + listItem.toString(), 0, y, 0, width );
-                } else {
-                    graphics.drawText( '\u2610' + "   " + listItem.toString(), 0, y, 0, width );
-                }
-            } else {
-                if( listItem.isSelected() ) {
-                    graphics.drawText( '\u2713' + "   " + listItem.toString(), 0, y, 0, width );
-                } else {
-                    graphics.drawText( "      " + listItem.toString(), 0, y, 0, width );
-                }
+            String text = listItem.toString().trim();
+            int type = listItem.getType();
+            Font font = graphics.getFont();
+            final int checkboxSize = font.getHeight();
+            final int textStart = PADDING + checkboxSize + 10;
+            final int fudge = listField.adjustRowHeight( font, index, text );
+            
+            Bitmap checkWhite = GPATools.ResizeTransparentBitmap(Bitmap.getBitmapResource("chk-white.png"), checkboxSize, checkboxSize, Bitmap.FILTER_BOX, Bitmap.SCALE_TO_FILL);
+            Bitmap checkBlue = GPATools.ResizeTransparentBitmap(Bitmap.getBitmapResource("chk-blue.png"), checkboxSize, checkboxSize, Bitmap.FILTER_BILINEAR, Bitmap.SCALE_TO_FILL);
+            Bitmap boxEmpty = GPATools.ResizeTransparentBitmap(Bitmap.getBitmapResource("box-empty.png"), checkboxSize, checkboxSize, Bitmap.FILTER_BILINEAR, Bitmap.SCALE_TO_FILL);
+            
+            switch( type ) {
+                case SelectAsyncFunction.POPUP_ITEM_TYPE_SEPARATOR:
+                    graphics.setColor( Color.GRAY );
+                    int lineY = y + listField.getRowHeight()/3;
+                    graphics.drawLine( PADDING, lineY, width - PADDING, lineY );
+                    break;
+                case SelectAsyncFunction.POPUP_ITEM_TYPE_GROUP:
+                    graphics.setColor( Color.GRAY );
+                    font = font.derive( Font.BOLD );
+                    graphics.setFont( font );
+                    graphics.drawText(text, PADDING, y + fudge, DrawStyle.ELLIPSIS, width - PADDING);
+                    break;
+                case SelectAsyncFunction.POPUP_ITEM_TYPE_OPTION:
+                    boolean enabled = listItem.isEnabled();
+                    if( !enabled ) {
+                        graphics.setColor( Color.GRAY );
+                    }
+                    
+                    if(_allowMultiple) {
+                        graphics.drawBitmap(PADDING, y, checkboxSize, checkboxSize, boxEmpty, 0, 0);
+                    }
+                    
+                    if( listItem.isSelected() && enabled ) {
+                        if( _allowMultiple ) {
+                            graphics.drawBitmap(PADDING, y, checkboxSize, checkboxSize, checkBlue, 0, 0);
+                        } else {
+                            graphics.drawBitmap(PADDING, y, checkboxSize, checkboxSize, checkWhite, 0, 0);
+                        }
+                    } 
+                    
+                    graphics.drawText(text, textStart, y + fudge, DrawStyle.ELLIPSIS , width - textStart);
+                    break;
+                default:
             }
         }
 
@@ -256,11 +291,13 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
         private final String _label;
         private boolean _selected;
         private boolean _enabled;
+        private int _type;
 
-        public ListItem( String label, boolean enabled, boolean selected ) {
+        public ListItem( String label, boolean enabled, boolean selected, int type ) {
             _label = label;
             _selected = selected;
             _enabled = enabled;
+            _type = type;
         }
 
         /* @Override */
@@ -278,6 +315,10 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
 
         public boolean isEnabled() {
             return _enabled;
+        }
+        
+        public int getType() {
+            return _type;
         }
     }
 

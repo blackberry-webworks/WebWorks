@@ -34,6 +34,11 @@ import blackberry.common.util.json4j.JSONArray;
 public class SelectAsyncFunction extends ScriptableFunctionBase {
 
     public static final String NAME = "selectAsync";
+    
+    public static final int POPUP_ITEM_TYPE_OPTION = 0;
+    public static final int POPUP_ITEM_TYPE_GROUP = 1;
+    public static final int POPUP_ITEM_TYPE_SEPARATOR = 2;
+    
     private ScriptEngine _scriptEngine;
     
     public SelectAsyncFunction(ScriptEngine se) {
