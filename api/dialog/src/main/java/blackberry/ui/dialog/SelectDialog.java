@@ -131,9 +131,8 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
         if( keyChar == '\u0000' ) {
             return;
         } else {
-          int lastFieldIndex = _choiceLength - 1;
-          int indexWithFocus = _list.getSelectedIndex();
-          
+            int lastFieldIndex = _choiceLength - 1;
+            int indexWithFocus = _list.getSelectedIndex();
 
             for( int i = indexWithFocus == lastFieldIndex ? 0 : indexWithFocus + 1; i != indexWithFocus; i++ ) {
                 String label = _listItems[ i ].toString();
