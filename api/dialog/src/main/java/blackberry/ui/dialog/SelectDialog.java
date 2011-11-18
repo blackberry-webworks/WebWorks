@@ -130,6 +130,22 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
         // Ensure we were passed a valid key to locate.
         if( keyChar == '\u0000' ) {
             return;
+        } else {
+          int lastFieldIndex = _choiceLength - 1;
+          int indexWithFocus = _list.getSelectedIndex();
+          
+
+            for( int i = indexWithFocus == lastFieldIndex ? 0 : indexWithFocus + 1; i != indexWithFocus; i++ ) {
+                String label = _listItems[ i ].toString();
+                if( label.indexOf( keyChar ) == 0 || label.substring( 0, 1 ).toLowerCase().indexOf( keyChar ) == 0 ) {
+                    _list.setSelectedIndex( i );
+                    break;
+                }
+                // Wrap around.
+                if( i == _choiceLength - 1 ) {
+                    i = -1;
+                }
+            }
         }
     }
 
@@ -164,7 +180,7 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
     protected boolean keyChar( char c, int status, int time ) {
         switch( c ) {
             case Characters.ENTER:
-                // _list.invokeAction(Field.ACTION_INVOKE);
+                 _list.invokeAction(Field.ACTION_INVOKE);
                 return true;
             case Characters.ESCAPE:
                 close();
