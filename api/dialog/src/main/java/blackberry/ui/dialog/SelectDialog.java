@@ -26,17 +26,12 @@ import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.TouchEvent;
 import net.rim.device.api.ui.TouchGesture;
-import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.ListField;
 import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.container.PopupScreen;
 import net.rim.device.api.ui.container.VerticalFieldManager;
-import net.rim.device.api.ui.input.InputSettings;
-import net.rim.device.api.ui.input.NavigationDeviceSettings;
-
-import blackberry.ui.dialog.SelectAsyncFunction;
 
 /**
  * Implementation of selection dialog
@@ -177,7 +172,12 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
     protected boolean keyChar( char c, int status, int time ) {
         switch( c ) {
             case Characters.ENTER:
-                 _list.invokeAction(Field.ACTION_INVOKE);
+                Field field = getLeafFieldWithFocus();
+                if( field == _doneButton ) {
+                    fieldChanged( _doneButton, -1 );
+                } else {
+                    _list.invokeAction( Field.ACTION_INVOKE );
+                }
                 return true;
             case Characters.ESCAPE:
                 close();
@@ -209,7 +209,8 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
                 int selectedIndex = getSelectedIndex();
                 ListItem listItem = (ListItem) get( this, selectedIndex );
 
-                if( !listItem.isEnabled() ) {
+                if( !listItem.isEnabled() || listItem.getType() == SelectAsyncFunction.POPUP_ITEM_TYPE_GROUP ||
+                        listItem.getType() == SelectAsyncFunction.POPUP_ITEM_TYPE_SEPARATOR ) {
                     return true;
                 }
 
@@ -251,14 +252,14 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
             switch( type ) {
                 case SelectAsyncFunction.POPUP_ITEM_TYPE_SEPARATOR:
                     graphics.setColor( Color.GRAY );
-                    int lineY = y + listField.getRowHeight()/3;
+                    int lineY = y + listField.getRowHeight() / 3;
                     graphics.drawLine( PADDING, lineY, width - PADDING, lineY );
                     break;
                 case SelectAsyncFunction.POPUP_ITEM_TYPE_GROUP:
                     graphics.setColor( Color.GRAY );
                     font = font.derive( Font.BOLD );
                     graphics.setFont( font );
-                    graphics.drawText(text, PADDING, y + fudge, DrawStyle.ELLIPSIS, width - PADDING);
+                    graphics.drawText( text, PADDING, y + fudge, DrawStyle.ELLIPSIS, width - PADDING );
                     break;
                 case SelectAsyncFunction.POPUP_ITEM_TYPE_OPTION:
                     boolean enabled = listItem.isEnabled();
@@ -266,19 +267,19 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
                         graphics.setColor( Color.GRAY );
                     }
                     
-                    if(_allowMultiple) {
-                        graphics.drawBitmap(PADDING, y, checkboxSize, checkboxSize, boxEmpty, 0, 0);
+                    if( _allowMultiple ) {
+                        graphics.drawBitmap( PADDING, y, checkboxSize, checkboxSize, boxEmpty, 0, 0 );
                     }
-                    
-                    if( listItem.isSelected() && enabled ) {
+
+                    if( listItem.isSelected() ) {
                         if( _allowMultiple ) {
-                            graphics.drawBitmap(PADDING, y, checkboxSize, checkboxSize, checkBlue, 0, 0);
+                            graphics.drawBitmap( PADDING, y, checkboxSize, checkboxSize, checkBlue, 0, 0 );
                         } else {
-                            graphics.drawBitmap(PADDING, y, checkboxSize, checkboxSize, checkWhite, 0, 0);
+                            graphics.drawBitmap( PADDING, y, checkboxSize, checkboxSize, checkWhite, 0, 0 );
                         }
-                    } 
-                    
-                    graphics.drawText(text, textStart, y + fudge, DrawStyle.ELLIPSIS , width - textStart);
+                    }
+
+                    graphics.drawText( text, textStart, y + fudge, DrawStyle.ELLIPSIS, width - textStart );
                     break;
                 default:
             }
