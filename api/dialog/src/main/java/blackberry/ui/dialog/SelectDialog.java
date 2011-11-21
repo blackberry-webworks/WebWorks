@@ -235,11 +235,11 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
 
         private void paintListItem( ListItem listItem, ListField listField, Graphics graphics, int index, int y, int width ) {
             String text = listItem.toString().trim();
+            
             int type = listItem.getType();
             Font font = graphics.getFont();
             final int checkboxSize = font.getHeight();
             final int textStart = PADDING + checkboxSize + 10;
-            final int fudge = 0; //setRowHeightReturnAdjustment(font, index, text);
             
             Bitmap checkWhite = GPATools.ResizeTransparentBitmap(Bitmap.getBitmapResource("chk-white.png"), checkboxSize, checkboxSize, Bitmap.FILTER_BOX, Bitmap.SCALE_TO_FILL);
             Bitmap checkBlue = GPATools.ResizeTransparentBitmap(Bitmap.getBitmapResource("chk-blue.png"), checkboxSize, checkboxSize, Bitmap.FILTER_BILINEAR, Bitmap.SCALE_TO_FILL);
@@ -255,7 +255,7 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
                     graphics.setColor( Color.GRAY );
                     font = font.derive( Font.BOLD );
                     graphics.setFont( font );
-                    graphics.drawText( text, PADDING, y + fudge, DrawStyle.ELLIPSIS, width - PADDING );
+                    graphics.drawText( text, PADDING, y, DrawStyle.ELLIPSIS, width - PADDING ); //no fudge added to y coordinate
                     break;
                 case SelectAsyncFunction.POPUP_ITEM_TYPE_OPTION:
                     boolean enabled = listItem.isEnabled();
@@ -275,30 +275,10 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
                         }
                     }
 
-                    graphics.drawText( text, textStart, y + fudge, DrawStyle.ELLIPSIS, width - textStart );
+                    graphics.drawText( text, textStart, y, DrawStyle.ELLIPSIS, width - textStart ); //no fudge added to y coordinate
                     break;
                 default:
             }
-        }
-        
-        private int setRowHeightReturnAdjustment(Font font, int index, String text) {
-            TextMetrics metrics = new TextMetrics();
-            font.measureText(text, 0, text.length(), null, metrics);
-            int baseline = font.getBaseline();
-    
-            int above = Math.max(-metrics.iBoundsTlY + font.getLeading(), baseline);
-            int below = Math.max(metrics.iBoundsBrY, font.getDescent());
-            int height = above + below;
-            int adjustment = above - baseline;
-            int rowHeight = getRowHeight(index);
-            if(height < rowHeight) {
-                adjustment += (rowHeight - height) >> 1;
-                height = rowHeight;
-            }
-            
-            setRowHeight(index, height);
-    
-            return adjustment;
         }
 
         public Object get( ListField list, int index ) {
