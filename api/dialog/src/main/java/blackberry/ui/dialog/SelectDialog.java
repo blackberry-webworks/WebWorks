@@ -60,21 +60,19 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
     private boolean _allowMultiple;
     private int _selectedIndex;
 
-    public SelectDialog( boolean allowMultiple, String[] labels, boolean[] enableds, boolean[] selecteds ) {
+    public SelectDialog( boolean allowMultiple, String[] labels, boolean[] enableds, boolean[] selecteds, int[] types ) {
         super( new PopupDelegate( allowMultiple ) );
         _choiceLength = labels.length;
         _thisDialog = this;
         _allowMultiple = allowMultiple;
         _selectedIndex = -1;
-
         
         _listItems = new ListItem[ _choiceLength ];
         for( int index = 0; index < _choiceLength; index++ ) {
             if( _selectedIndex == -1 && selecteds[ index ] && enableds[ index ] ) {
                 _selectedIndex = index;
             }
-            //TODO: Inserting default Item type of OPTION until we implement passing them from JS
-            _listItems[ index ] = new ListItem( labels[ index ], enableds[ index ], selecteds[ index ], SelectAsyncFunction.POPUP_ITEM_TYPE_OPTION );
+            _listItems[ index ] = new ListItem( labels[ index ], enableds[ index ], selecteds[ index ], types[ index ] );
         }
 
         _list = new SelectListField();
@@ -92,9 +90,9 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
         }
 
         // Enable swipe with the track-pad.
-        final InputSettings inputSettings = NavigationDeviceSettings.createEmptySet();
+        /*final InputSettings inputSettings = NavigationDeviceSettings.createEmptySet();
         inputSettings.set( NavigationDeviceSettings.DETECT_SWIPE, 1 );
-        addInputSettings( inputSettings );
+        addInputSettings( inputSettings );*/
     }
 
     public int[] getResponse() {

@@ -15,6 +15,8 @@
  */
 package blackberry.ui.dialog;
 
+import java.util.Vector;
+
 import net.rim.device.api.script.ScriptEngine;
 import net.rim.device.api.script.Scriptable;
 import net.rim.device.api.script.ScriptableFunction;
@@ -56,12 +58,13 @@ public class SelectAsyncFunction extends ScriptableFunctionBase {
         int numChoices = choices.getElementCount();
         String[] labels = new String[numChoices];
         boolean[] enabled = new boolean[numChoices];
-        boolean[] selected = new boolean[numChoices];
+        boolean[] selected = new boolean[numChoices]; 
+        int[] types = new int[numChoices];
         
-        populateChoiceStateArrays(choices, labels, enabled, selected);
+        populateChoiceStateArrays(choices, labels, enabled, selected, types);
 
         // create dialog
-        SelectDialog d = new SelectDialog(allowMultiple, labels, enabled, selected);
+        SelectDialog d = new SelectDialog(allowMultiple, labels, enabled, selected, types);
         SelectDialogRunner currentDialog = new SelectDialogRunner(d, _scriptEngine, callback);
 
         // queue
@@ -71,13 +74,15 @@ public class SelectAsyncFunction extends ScriptableFunctionBase {
         return Scriptable.UNDEFINED;
     }
     
-    private void populateChoiceStateArrays(Scriptable fromScriptableChoices, String[] labels, boolean[] enabled, boolean[] selected) {
+    private void populateChoiceStateArrays(Scriptable fromScriptableChoices, String[] labels, boolean[] enabled, boolean[] selected, int[] type) {
         try {
+            
             for(int i = 0; i < fromScriptableChoices.getElementCount(); i++) {
                 Scriptable choice = (Scriptable)fromScriptableChoices.getElement(i);
                 labels[i] = (String)choice.getField("label");
                 enabled[i] = ((Boolean)choice.getField("enabled")).booleanValue();
                 selected[i] = ((Boolean)choice.getField("selected")).booleanValue();
+                type[i] = ((String)choice.getField("type")).equals("group") ? POPUP_ITEM_TYPE_GROUP : POPUP_ITEM_TYPE_OPTION;
             }
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());

@@ -317,27 +317,47 @@ navigationController = {
                                     }
                                 };
         
-        function getSelectChoices() {
-            var choices = [],
+        function getSelectChoices(htmlElem) {
+            var opts = [],
                 optionNodes = htmlElem.options,
-                i = 0;
+                i = 0,
+                currentOption,
+                currentGroup = "", 
+                nodeGroup;
 
             for(i; i < optionNodes.length; i++) {
-                choices.push( 
-                    {   
-                        "label" : optionNodes.item(i).text,
-                        "enabled" : typeof(optionNodes.item(i).enabled) === "undefined" || optionNodes.item(i).enabled == true,
-                        "selected" : typeof(optionNodes.item(i).selected) === "undefined" || optionNodes.item(i).selected == true
-                    } 
-                );
+                currentOption = optionNodes.item(i);
+                nodeGroup = (currentOption.parentNode.tagName === "OPTGROUP") ? currentOption.parentNode.label : "";
+                
+                if(currentGroup !== nodeGroup) {
+                    currentGroup = nodeGroup;
+                    
+                    opts.push(
+                        {
+                            "label" : currentGroup,
+                            "enabled" : false,
+                            "selected" : false, 
+                            "type" : "group"
+                        }
+                    );
+                } else {
+                    opts.push( 
+                        {   
+                            "label" : currentOption.label || currentOption.text,
+                            "enabled" : currentOption.disabled || (currentOption.disabled == false),
+                            "selected" : currentOption.selected || (currentOption.selected == true), 
+                            "type" : "option"
+                        } 
+                    );
+                }
             }
             
-            return choices;
+            return opts;
         };
         
         navigationController.handleSelect(
             typeof(htmlElem.attributes.multiple) !== "undefined" ? true : false, 
-            getSelectChoices(),
+            getSelectChoices(htmlElem),
             "navigationController.onSELECT"
         );
     },
