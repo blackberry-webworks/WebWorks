@@ -340,16 +340,16 @@ navigationController = {
                             "type" : "group"
                         }
                     );
-                } else {
-                    opts.push( 
-                        {   
-                            "label" : currentOption.label || currentOption.text,
-                            "enabled" : currentOption.disabled || (currentOption.disabled == false),
-                            "selected" : currentOption.selected || (currentOption.selected == true), 
-                            "type" : "option"
-                        } 
-                    );
-                }
+                } 
+                
+                opts.push( 
+                    {   
+                        "label" : currentOption.text,
+                        "enabled" : currentOption.disabled || (currentOption.disabled == false),
+                        "selected" : currentOption.selected || (currentOption.selected == true), 
+                        "type" : "option"
+                    } 
+                );
             }
             
             return opts;
