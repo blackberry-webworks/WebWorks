@@ -24,6 +24,7 @@ import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.TextMetrics;
 import net.rim.device.api.ui.TouchEvent;
 import net.rim.device.api.ui.TouchGesture;
 import net.rim.device.api.ui.component.ButtonField;
@@ -83,11 +84,6 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
             add( new SeparatorField() );
             add( _doneButton );
         }
-
-        // Enable swipe with the track-pad.
-        /*final InputSettings inputSettings = NavigationDeviceSettings.createEmptySet();
-        inputSettings.set( NavigationDeviceSettings.DETECT_SWIPE, 1 );
-        addInputSettings( inputSettings );*/
     }
 
     public int[] getResponse() {
@@ -243,7 +239,7 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
             Font font = graphics.getFont();
             final int checkboxSize = font.getHeight();
             final int textStart = PADDING + checkboxSize + 10;
-            final int fudge = listField.adjustRowHeight( font, index, text );
+            final int fudge = 0; //setRowHeightReturnAdjustment(font, index, text);
             
             Bitmap checkWhite = GPATools.ResizeTransparentBitmap(Bitmap.getBitmapResource("chk-white.png"), checkboxSize, checkboxSize, Bitmap.FILTER_BOX, Bitmap.SCALE_TO_FILL);
             Bitmap checkBlue = GPATools.ResizeTransparentBitmap(Bitmap.getBitmapResource("chk-blue.png"), checkboxSize, checkboxSize, Bitmap.FILTER_BILINEAR, Bitmap.SCALE_TO_FILL);
@@ -283,6 +279,26 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
                     break;
                 default:
             }
+        }
+        
+        private int setRowHeightReturnAdjustment(Font font, int index, String text) {
+            TextMetrics metrics = new TextMetrics();
+            font.measureText(text, 0, text.length(), null, metrics);
+            int baseline = font.getBaseline();
+    
+            int above = Math.max(-metrics.iBoundsTlY + font.getLeading(), baseline);
+            int below = Math.max(metrics.iBoundsBrY, font.getDescent());
+            int height = above + below;
+            int adjustment = above - baseline;
+            int rowHeight = getRowHeight(index);
+            if(height < rowHeight) {
+                adjustment += (rowHeight - height) >> 1;
+                height = rowHeight;
+            }
+            
+            setRowHeight(index, height);
+    
+            return adjustment;
         }
 
         public Object get( ListField list, int index ) {
