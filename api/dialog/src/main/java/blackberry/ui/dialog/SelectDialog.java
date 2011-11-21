@@ -24,7 +24,6 @@ import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
-import net.rim.device.api.ui.TextMetrics;
 import net.rim.device.api.ui.TouchEvent;
 import net.rim.device.api.ui.TouchGesture;
 import net.rim.device.api.ui.component.ButtonField;
@@ -42,13 +41,10 @@ import net.rim.device.api.ui.container.VerticalFieldManager;
  */
 public class SelectDialog extends PopupScreen implements FieldChangeListener {
 
-    private SelectDialog _thisDialog;
     private ButtonField _doneButton;
     private VerticalFieldManager _vfm;
     private SelectListField _list;
-
-    private DialogListener _closeListener;
-
+    
     private ListItem[] _listItems;
     private int[] _response = null;
 
@@ -59,16 +55,22 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
     public SelectDialog( boolean allowMultiple, String[] labels, boolean[] enableds, boolean[] selecteds, int[] types ) {
         super( new PopupDelegate( allowMultiple ) );
         _choiceLength = labels.length;
-        _thisDialog = this;
         _allowMultiple = allowMultiple;
         _selectedIndex = -1;
         
         _listItems = new ListItem[ _choiceLength ];
+        int indexAssignment = 0;
         for( int index = 0; index < _choiceLength; index++ ) {
             if( _selectedIndex == -1 && selecteds[ index ] && enableds[ index ] ) {
                 _selectedIndex = index;
             }
-            _listItems[ index ] = new ListItem( labels[ index ], enableds[ index ], selecteds[ index ], types[ index ] );
+            if( types[ index ] == SelectAsyncFunction.POPUP_ITEM_TYPE_OPTION ) {
+                _listItems[ index ] = new ListItem( labels[ index ], enableds[ index ], selecteds[ index ], types[ index ],
+                        indexAssignment );
+                indexAssignment++;
+            } else {
+                _listItems[ index ] = new ListItem( labels[ index ], enableds[ index ], selecteds[ index ], types[ index ], -1 );
+            }
         }
 
         _list = new SelectListField();
@@ -91,27 +93,23 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
     }
 
     public void fieldChanged( Field field, int arg1 ) {
-        if( field == _doneButton ) {
-            int counter = 0;
+        int counter = 0;
 
-            for( int index = 0; index < _listItems.length; index++ ) {
-                if( _listItems[ index ].isSelected() ) {
-                    counter++;
-                }
+        for( int index = 0; index < _listItems.length; index++ ) {
+            if( _listItems[ index ].isSelected() ) {
+                counter++;
             }
-            int[] response = new int[ counter ];
-            int responseIndex = 0;
-            for( int index = 0; index < _listItems.length; index++ ) {
-                if( _listItems[ index ].isSelected() ) {
-                    response[ responseIndex ] = index;
-                    responseIndex++;
-                }
-            }
-            _response = response;
-        } else {
-            _response = new int[] { _selectedIndex };
         }
-        
+        int[] response = new int[ counter ];
+        int responseIndex = 0;
+        for( int index = 0; index < _listItems.length; index++ ) {
+            if( _listItems[ index ].isSelected() ) {
+                response[ responseIndex ] = _listItems[ index ].getIndex();
+                responseIndex++;
+            }
+        }
+        _response = response;
+
         close();
     }
 
@@ -302,12 +300,14 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
         private boolean _selected;
         private boolean _enabled;
         private int _type;
+        private int _index;
 
-        public ListItem( String label, boolean enabled, boolean selected, int type ) {
+        public ListItem( String label, boolean enabled, boolean selected, int type, int index ) {
             _label = label;
             _selected = selected;
             _enabled = enabled;
             _type = type;
+            _index = index;
         }
 
         /* @Override */
@@ -326,9 +326,13 @@ public class SelectDialog extends PopupScreen implements FieldChangeListener {
         public boolean isEnabled() {
             return _enabled;
         }
-        
+
         public int getType() {
             return _type;
+        }
+
+        public int getIndex() {
+            return _index;
         }
     }
 
