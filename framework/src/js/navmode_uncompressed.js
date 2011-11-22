@@ -1287,7 +1287,7 @@ navigationController = {
     },
 
     scrollX : function(value) {
-        window.scrollTo(value, window.pageYOffset);
+        window.scrollTo(navigationController.unscaleValue(value), window.pageYOffset);
 
         // Below is some experimental smooth scrolling code
         /*var startX = 0;
@@ -1317,7 +1317,7 @@ navigationController = {
     },
 
     scrollY : function(value) {
-        window.scrollTo(window.pageXOffset, value);
+        window.scrollTo(window.pageXOffset, navigationController.unscaleValue(value));
 
         // Below is some experimental smooth scrolling code
         /*var startY = 0;
