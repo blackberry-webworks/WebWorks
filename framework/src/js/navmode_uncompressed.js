@@ -77,14 +77,14 @@ navigationController = {
 
         // Find our first focusable item
         var initialItems = document.body.querySelectorAll('[x-blackberry-initialFocus=true]');
-        if (initialItems.length == 0) {
+        if (initialItems.length === 0) {
             navigationController.setRimFocus(navigationController.findHighestFocusableNodeInScreen());
         } else {
             var nextFocusNode = initialItems[0];
             if (!navigationController.isValidFocusableNode(nextFocusNode)) {
                 nextFocusNode = null;
             }
-            if (nextFocusNode != null) {
+            if (nextFocusNode !== null) {
                 var result = navigationController.determineBoundingRect(nextFocusNode);
                 var bounds = {
                     'element' : nextFocusNode,
@@ -137,26 +137,27 @@ navigationController = {
 
     /* Returns the current focused element's id */
     getFocus : function() {
-        if (navigationController.currentFocused == null)
+        if (navigationController.currentFocused === null) {
             return null;
-        else
+        } else {
             return navigationController.currentFocused.element.getAttribute('id');
+        }
     },
 
     /* Set's the focus to an element with the supplied id */
     setFocus : function(id) {
-        if (id.length == 0) {
+        if (id.length === 0) {
             navigationController.focusOut();
             return;
         }
         var nextFocusNode = null;
         nextFocusNode = document.getElementById(id);
-        if (nextFocusNode != null) {
+        if (nextFocusNode !== null) {
             if (!navigationController.isValidFocusableNode(nextFocusNode)) {
                 nextFocusNode = null;
             }
         }
-        if (nextFocusNode != null) {
+        if (nextFocusNode !== null) {
             var result = navigationController.determineBoundingRect(nextFocusNode);
             var bounds = {
                 'element' : nextFocusNode,
@@ -186,7 +187,7 @@ navigationController = {
         }
 
         // Determine our direction and scroll
-        if (navigationController.currentDirection == navigationController.DOWN) {
+        if (navigationController.currentDirection === navigationController.DOWN) {
             if (navigationController.currentFocused
                     && navigationController.currentFocused.element.hasAttribute('x-blackberry-onDown')) {
                 eval(navigationController.currentFocused.element.getAttribute('x-blackberry-onDown'));
@@ -194,7 +195,7 @@ navigationController = {
             } else {
                 navigationController.handleDirectionDown();
             }
-        } else if (navigationController.currentDirection == navigationController.UP) {
+        } else if (navigationController.currentDirection === navigationController.UP) {
             if (navigationController.currentFocused
                     && navigationController.currentFocused.element.hasAttribute('x-blackberry-onUp')) {
                 eval(navigationController.currentFocused.element.getAttribute('x-blackberry-onUp'));
@@ -202,7 +203,7 @@ navigationController = {
             } else {
                 navigationController.handleDirectionUp();
             }
-        } else if (navigationController.currentDirection == navigationController.RIGHT) {
+        } else if (navigationController.currentDirection === navigationController.RIGHT) {
             if (navigationController.currentFocused
                     && navigationController.currentFocused.element.hasAttribute('x-blackberry-onRight')) {
                 eval(navigationController.currentFocused.element.getAttribute('x-blackberry-onRight'));
@@ -210,7 +211,7 @@ navigationController = {
             } else {
                 navigationController.handleDirectionRight();
             }
-        } else if (navigationController.currentDirection == navigationController.LEFT) {
+        } else if (navigationController.currentDirection === navigationController.LEFT) {
             if (navigationController.currentFocused
                     && navigationController.currentFocused.element.hasAttribute('x-blackberry-onLeft')) {
                 eval(navigationController.currentFocused.element.getAttribute('x-blackberry-onLeft'));
@@ -225,37 +226,140 @@ navigationController = {
 
     /* Handle the press from the trackpad */
     onTrackpadDown : function() {
-        if (navigationController.currentFocused == null)
+        /*if (navigationController.currentFocused === null) {
             return;
-
-        // Now send the DOM event
-        var mousedown = document.createEvent("MouseEvents");
-        mousedown.initMouseEvent("mousedown", true, true, window, 0, navigationController.currentFocused.rect.x,
-                navigationController.currentFocused.rect.y, 1, 1, false, false, false, false, 0, null);
-        navigationController.currentFocused.element.dispatchEvent(mousedown);
+        }
+        
+        try {
+            // Now send the mouseup DOM event
+            var mousedown = document.createEvent("MouseEvents");
+            mousedown.initMouseEvent("mousedown", true, true);
+            navigationController.currentFocused.element.dispatchEvent(mousedown);
+        } catch (e) {
+            // TODO: the last line sometimes causes an exception in 5.0 only, could not figure out why
+            // do nothing
+        }*/
     },
 
     /* Handle the "release" of the press from the trackpad */
     onTrackpadUp : function() {
-        if (navigationController.currentFocused == null)
+        if (navigationController.currentFocused === null) {
             return;
-
+        }
+        
         try {
             // Now send the mouseup DOM event
             var mouseup = document.createEvent("MouseEvents");
             mouseup.initMouseEvent("mouseup", true, true, window, 0, navigationController.currentFocused.rect.x,
                     navigationController.currentFocused.rect.y, 1, 1, false, false, false, false, 0, null);
             navigationController.currentFocused.element.dispatchEvent(mouseup);
-
-            // Now send the click DOM event
-            var click = document.createEvent("MouseEvents");
-            click.initMouseEvent("click", true, true, window, 0, navigationController.currentFocused.rect.x,
-                    navigationController.currentFocused.rect.y, 1, 1, false, false, false, false, 0, null);
-            navigationController.currentFocused.element.dispatchEvent(click);
+            navigationController.onTrackpadClick();
         } catch (e) {
             // TODO: the last line sometimes causes an exception in 5.0 only, could not figure out why
             // do nothing
         }
+    },
+    
+    onTrackpadClick : function() {
+        if (!navigationController.currentFocused) {
+            return;
+        }
+        
+        var focus = navigationController.currentFocused,     //Closure the current focus
+            click = document.createEvent("MouseEvents"),
+            cancelled,
+            nativeInfo;
+
+        // Now send the DOM event and see if any listeners preventDefault()
+        //click.initMouseEvent("click", true, true, window, 0, navigationController.currentFocused.rect.x, navigationController.currentFocused.rect.y, 1, 1, false, false, false, false, 0, null);
+        click.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+        cancelled = !focus.element.dispatchEvent(click);
+        
+        if(!cancelled) {
+            //By convention we'll define a handler for each tag with a native UI at navigationController.tagName
+            if(typeof(navigationController[focus.element.tagName] === "function")) {
+                navigationController[focus.element.tagName](focus.element);
+            }
+        }
+    },
+    
+    SELECT: function(htmlElem) {
+        //We'll stick our event handler at on[tagName]
+        navigationController.onSELECT = function(evtData) {
+                                    var i,
+                                        change = document.createEvent("HTMLEvents"),
+                                        newSelection = [],
+                                        fireChange = false;
+                                    
+                                    //Initialize to all false
+                                    for(i = 0; i < htmlElem.options.length; i++) {
+                                        newSelection.push(false);
+                                    }
+                                    
+                                    //flip the selected items to true
+                                    for(i = 0; i < evtData.length; i++) {
+                                        newSelection[evtData[i]] = true;
+                                    } 
+                                    
+                                    // change state of multi select to match selection array
+                                    // set changed event to fire only if the selection state is
+                                    // different
+                                    for(i = 0; i < newSelection.length; i++) {
+                                        if(newSelection[i] !== htmlElem.options.item(i).selected) {
+                                            htmlElem.options.item(i).selected = newSelection[i];
+                                            fireChange = true;
+                                        }
+                                    }
+                                    
+                                    if(fireChange) {
+                                        change.initEvent("change", true, true);
+                                        htmlElem.dispatchEvent(change);
+                                    }
+                                };
+        
+        function getSelectChoices(htmlElem) {
+            var opts = [],
+                optionNodes = htmlElem.options,
+                i = 0,
+                currentOption,
+                currentGroup = "", 
+                nodeGroup;
+
+            for(i; i < optionNodes.length; i++) {
+                currentOption = optionNodes.item(i);
+                nodeGroup = (currentOption.parentNode.tagName === "OPTGROUP") ? currentOption.parentNode.label : "";
+                
+                if(currentGroup !== nodeGroup) {
+                    currentGroup = nodeGroup;
+                    
+                    opts.push(
+                        {
+                            "label" : currentGroup,
+                            "enabled" : false,
+                            "selected" : false, 
+                            "type" : "group"
+                        }
+                    );
+                } 
+                
+                opts.push( 
+                    {   
+                        "label" : currentOption.text,
+                        "enabled" : currentOption.disabled || (currentOption.disabled == false),
+                        "selected" : currentOption.selected || (currentOption.selected == true), 
+                        "type" : "option"
+                    } 
+                );
+            }
+            
+            return opts;
+        };
+        
+        navigationController.handleSelect(
+            typeof(htmlElem.attributes.multiple) !== "undefined" ? true : false, 
+            getSelectChoices(htmlElem),
+            "navigationController.onSELECT"
+        );
     },
 
     /* See if the passed in element is still in our focusable list */
@@ -887,25 +991,29 @@ navigationController = {
     },
 
     setRimFocus : function(target) {
+        try {
+            // First un focus the old focused item
+            navigationController.focusOut();
 
-        // First un focus the old focused item
-        navigationController.focusOut();
+            // Now set focus to the new item
+            var mouseover = document.createEvent('MouseEvents');
+            mouseover.initMouseEvent('mouseover', true, true, window, 0, target.rect.x, target.rect.y, 1, 1, false, false,
+                    false, false, null, null);
+            target.element.dispatchEvent(mouseover);
 
-        // Now set focus to the new item
-        var mouseover = document.createEvent('MouseEvents');
-        mouseover.initMouseEvent('mouseover', true, true, window, 0, target.rect.x, target.rect.y, 1, 1, false, false,
-                false, false, null, null);
-        target.element.dispatchEvent(mouseover);
+            // Set our focused item
+            navigationController.currentFocused = target;
 
-        // Set our focused item
-        navigationController.currentFocused = target;
+            if (navigationController.isAutoFocus(target)) {
+                target.element.focus();
+            }
 
-        if (navigationController.isAutoFocus(target)) {
-            target.element.focus();
+            // Scroll to the current focus node
+            navigationController.scrollToRect(navigationController.scaleRect(target.rect));
+        } catch(error) {
+            console.log(error);
+            console.log(error.message);
         }
-
-        // Scroll to the current focus node
-        navigationController.scrollToRect(navigationController.scaleRect(target.rect));
     },
 
     focusOut : function() {
@@ -1264,6 +1372,9 @@ bbNav = {
         blackberry.focus.getPriorFocus = navigationController.getPriorFocus;
         blackberry.focus.setFocus = navigationController.setFocus;
         blackberry.focus.focusOut = navigationController.focusOut;
+        
+        navigationController.handleSelect = blackberry.ui.dialog.selectAsync;
+        
         navigationController.initialize(data);
     }
 }
