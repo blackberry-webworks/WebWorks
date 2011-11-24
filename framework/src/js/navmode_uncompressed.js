@@ -1372,10 +1372,8 @@ bbNav = {
         blackberry.focus.getPriorFocus = navigationController.getPriorFocus;
         blackberry.focus.setFocus = navigationController.setFocus;
         blackberry.focus.focusOut = navigationController.focusOut;
-        
-        navigationController.handleSelect = blackberry.ui.dialog.selectAsync;
-        
         navigationController.initialize(data);
+        navigationController.handleSelect = blackberry.ui.dialog.selectAsync;
     }
 }
 
