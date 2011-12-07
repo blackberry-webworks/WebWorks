@@ -1055,13 +1055,6 @@ navigationController = {
 		 	focusables = document.body.querySelectorAll(navigationController.querySelector);
 
 		for (i = 0; i < focusables.length; i++) {
-			if (focusables[i].tagName === "FRAME") {
-				// Add all the focusable elements in frame into the focusable element list.
-				frameFocusables = focusables[i].contentDocument.body.querySelectorAll(navigationController.querySelector);
-				for (j = 0; j < frameFocusables.length; j++) {
-					items.push(frameFocusables[j]);
-				}
-			}
 			items.push(focusables[i]);
 		}
 		
