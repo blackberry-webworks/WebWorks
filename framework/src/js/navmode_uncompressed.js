@@ -21,7 +21,7 @@ navigationController = {
     AUTO_FOCUS_INPUT_TYPES : '|color|date|month|time|week|email|number|password|search|text|url|tel|',
     SCROLLABLE_INPUT_TYPES : '|text|password|email|search|tel|number|url|',
     REQUIRE_CLICK_INPUT_TYPES : '|file|',
-    querySelector : 'textarea:not([x-blackberry-focusable=false]),a:not([x-blackberry-focusable=false]),input:not([x-blackberry-focusable=false]),select:not([x-blackberry-focusable=false]),button:not([x-blackberry-focusable=false]),[x-blackberry-focusable=true]',
+    querySelector : 'frame,textarea:not([x-blackberry-focusable=false]),a:not([x-blackberry-focusable=false]),input:not([x-blackberry-focusable=false]),select:not([x-blackberry-focusable=false]),button:not([x-blackberry-focusable=false]),[x-blackberry-focusable=true]',
 
     DOWN : 3,
     UP : 2,
@@ -1050,11 +1050,25 @@ navigationController = {
      * populate the list of elements and their absolute bounding rects
      */
     getFocusableElements : function() {
-        var items = document.body.querySelectorAll(navigationController.querySelector)
-        var length = items.length;
+    	var items = [], i, j,
+		 	frameFocusables,
+		 	focusables = document.body.querySelectorAll(navigationController.querySelector);
+
+		for (i = 0; i < focusables.length; i++) {
+			if (focusables[i].tagName === "FRAME") {
+				// Add all the focusable elements in frame into the focusable element list.
+				frameFocusables = focusables[i].contentDocument.body.querySelectorAll(navigationController.querySelector);
+				for (j = 0; j < frameFocusables.length; j++) {
+					items.push(frameFocusables[j]);
+				}
+			}
+			items.push(focusables[i]);
+		}
+		
+		var length = items.length;
         // Determine bounding rects and populate list
         var boundingRects = [];
-        for ( var i = 0; i < length; i++) {
+        for ( i = 0; i < length; i++) {
             var item = items[i];
             var result = navigationController.determineBoundingRect(item);
             var bounds = {
@@ -1500,33 +1514,34 @@ navigationController = {
 
 bbNav = {
     init : function() {
-
-        var data = {
-            'direction' : 3,
-            'delta' : 1,
-            'zoomScale' : 1,
-            'virtualHeight' : screen.height,
-            'virtualWidth' : screen.width,
-            'verticalScroll' : 0,
-            'horizontalScroll' : 0,
-            'height' : screen.height,
-            'width' : screen.width
-        };
-        
-        blackberry.focus.onScroll = navigationController.onScroll;
-        blackberry.focus.onTrackpadDown = navigationController.onTrackpadDown;
-        blackberry.focus.onTrackpadUp = navigationController.onTrackpadUp;
-        blackberry.focus.getDirection = navigationController.getDirection;
-        blackberry.focus.getFocus = navigationController.getFocus;
-        blackberry.focus.getPriorFocus = navigationController.getPriorFocus;
-        blackberry.focus.setFocus = navigationController.setFocus;
-        blackberry.focus.focusOut = navigationController.focusOut;
-        
-        navigationController.initialize(data);
-        
-        navigationController.handleSelect = blackberry.ui.dialog.selectAsync;
-        navigationController.handleInputDateTime = blackberry.ui.dialog.dateTimeAsync;
-        navigationController.handleInputColor = blackberry.ui.dialog.colorPickerAsync;
+    	if (window.top === window.self) {
+	        var data = {
+	            'direction' : 3,
+	            'delta' : 1,
+	            'zoomScale' : 1,
+	            'virtualHeight' : screen.height,
+	            'virtualWidth' : screen.width,
+	            'verticalScroll' : 0,
+	            'horizontalScroll' : 0,
+	            'height' : screen.height,
+	            'width' : screen.width
+	        };
+	        
+	        blackberry.focus.onScroll = navigationController.onScroll;
+	        blackberry.focus.onTrackpadDown = navigationController.onTrackpadDown;
+	        blackberry.focus.onTrackpadUp = navigationController.onTrackpadUp;
+	        blackberry.focus.getDirection = navigationController.getDirection;
+	        blackberry.focus.getFocus = navigationController.getFocus;
+	        blackberry.focus.getPriorFocus = navigationController.getPriorFocus;
+	        blackberry.focus.setFocus = navigationController.setFocus;
+	        blackberry.focus.focusOut = navigationController.focusOut;
+	        
+	        navigationController.initialize(data);
+	        
+	        navigationController.handleSelect = blackberry.ui.dialog.selectAsync;
+	        navigationController.handleInputDateTime = blackberry.ui.dialog.dateTimeAsync;
+	        navigationController.handleInputColor = blackberry.ui.dialog.colorPickerAsync;
+	    }
     }
 }
 
