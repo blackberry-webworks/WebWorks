@@ -106,12 +106,11 @@ navigationController = {
     changeInputNodeTypes : function(inputTypes) {
         var i, 
             j,
-            focusableInputs = "input[x-blackberry-focusable=true]",
             selector,
             nodes;
         
         for(i = 0; i < inputTypes.length; i++) {
-            selector = focusableInputs + "[type=" + inputTypes[i] + "]";
+            selector = "input[type=" + inputTypes[i] + "]";
             nodes = document.querySelectorAll(selector);
             
             for(j = 0; j < nodes.length; j++) {
@@ -366,16 +365,16 @@ navigationController = {
                 );
                 break;
             case "color" :
-	            if (navigationController.device.isBB5() || navigationController.device.isBB6()) {
-	                var value = htmlElem.value;
-	                if (value === "") {
-	                    value = "000000";
-	                }
-	                navigationController.handleInputColor(
-	                    value,
-	                    navigationController.onInput
-	                );
-            	}
+                    if (navigationController.device.isBB5() || navigationController.device.isBB6()) {
+                        var value = htmlElem.value;
+                        if (value === "") {
+                            value = "000000";
+                        }
+                        navigationController.handleInputColor(
+                            value,
+                            navigationController.onInput
+                        );
+                }
                 break;
             default: break; //no special handling
         }
@@ -529,7 +528,7 @@ navigationController = {
             navigationController.scrollUp();
         }
     },
-	
+        
     //determines whether an input control is of the "range" type
     isRangeControl : function(inputControl) {
         if (inputControl.type == "range") {
@@ -538,15 +537,15 @@ navigationController = {
         return false;
     },
 
-    //Support function for handling the slider movement of the range input control in navigation mode	
+    //Support function for handling the slider movement of the range input control in navigation mode   
     handleRangeSliderMovement : function(direction) {
-        var currentNode = navigationController.currentFocused.element; 	
-        var currentValue = currentNode.value;	
+        var currentNode = navigationController.currentFocused.element;  
+        var currentValue = currentNode.value;   
         switch (direction) {
-            case 'r': //scroll right, increment position				
+            case 'r': //scroll right, increment position                                
                 if (currentValue < currentNode.clientWidth) {
                     currentNode.value ++;
-                }	
+                }       
                 break;
             case 'l': //scroll left, decrement position
                 if (currentValue > 1) {
@@ -554,10 +553,10 @@ navigationController = {
                 }
                 break;
             default:
-                console.log("Impossible");			
+                console.log("Impossible");                      
             } 
         }, 
-	
+        
     // Support function for scrolling right
     handleDirectionRight : function() {
         if (navigationController.currentFocused != null &&
