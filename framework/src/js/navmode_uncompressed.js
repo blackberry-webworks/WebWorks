@@ -827,7 +827,7 @@ navigationController = {
         var length = navigationController.focusableNodes.length;
         var downNode = null;
         var downRect = null;
-        
+
         if ( document.querySelectorAll("frame") == null ) {
 	        for ( var i = 0; i < length; i++) {
 	            if (i == index) {
@@ -870,9 +870,9 @@ navigationController = {
 	                }
 	            }
 	        }
-        } else {
-        	downNode = navigationController.determineDownOrRightFrameFocus("down");
-        }
+	    } else {
+			downNode = navigationController.determineDownOrRightFrameFocus("down");
+		}
         return downNode;
     },
 
@@ -939,7 +939,7 @@ navigationController = {
 	            }
 	        }
         } else {
-        	upNode = navigationController.determineUpOrDownFrameFocus("up");
+        	upNode = navigationController.determineUpOrLeftFrameFocus("up");
         }
         return upNode;
     },
@@ -972,12 +972,12 @@ navigationController = {
 	            }
 	
 	            var node = navigationController.focusableNodes[i];
-	            var nodeRect = node.rect;
-	
-	            if (nodeRect == null || nodeRect.width == 0 || nodeRect.height == 0) {
-	                continue;
-	            }
-	
+                var nodeRect = node.rect;
+
+                if (nodeRect == null || nodeRect.width == 0 || nodeRect.height == 0) {
+                    continue;
+                }
+
 	            if (navigationController.isRectIntersectingHorizontally(nodeRect, currentRect)) {
 	                var swap = false;
 	                if (nodeRect.x == currentRect.x) {
@@ -1017,39 +1017,40 @@ navigationController = {
 	                }
 	            }
 	        }
-        } else {
-        	leftNode = navigationController.determineUpOrDownFrameFocus("left");
-        }
+    	} else {
+    		leftNode = navigationController.determineUpOrLeftFrameFocus("left");
+    	}
         return leftNode;
     },
 
     /* Find the next node that should have focus in the Left direction */
     findRightFocusableNode : function() {
-        if (navigationController.focusableNodes == null || navigationController.focusableNodes.length == 0)
-            return null;
-
-        var index;
-
-        if (navigationController.currentFocused != null)
-            index = navigationController.indexOf(navigationController.currentFocused);
-        else
-            return navigationController.findRightmostFocusableNodeInScreen();
-
-        if (index == -1) {
-            return navigationController.findRightmostFocusableNodeInScreen();
-        }
-
-        var currentRect = navigationController.currentFocused.rect;
-        var rightNode = null;
-        var rightRect = null;
-        var length = navigationController.focusableNodes.length;
+	    if (navigationController.focusableNodes == null || navigationController.focusableNodes.length == 0)
+	        return null;
+	
+	    var index;
+	
+	    if (navigationController.currentFocused != null)
+	        index = navigationController.indexOf(navigationController.currentFocused);
+	    else
+	        return navigationController.findRightmostFocusableNodeInScreen();
+	
+	    if (index == -1) {
+	        return navigationController.findRightmostFocusableNodeInScreen();
+	    }
+	    
+	    var currentRect = navigationController.currentFocused.rect;
+	    var rightNode = null;
+	    var rightRect = null;
+	    var length = navigationController.focusableNodes.length;
+	    
         if ( document.querySelectorAll("frame") == null ) {
-	        for ( var i = 0; i < length; i++) {
-	            if (i == index) {
-	                continue;
-	            }
-	            var node = navigationController.focusableNodes[i];
-	            var nodeRect = node.rect;
+            for ( var i = 0; i < length; i++) {
+                if (i == index) {
+                   continue;
+                }
+                var node = navigationController.focusableNodes[i];
+                var nodeRect = node.rect;
 	
 	            if (nodeRect == null || nodeRect.width == 0 || nodeRect.height == 0) {
 	                continue;
@@ -1068,7 +1069,7 @@ navigationController = {
 	                        } else {
 	                            if (nodeRect.x == rightRect.x) {
 	                                if (nodeRect.width < rightRect.width) {
-	                                    swap = true;
+                                        swap = true;
 	                                }
 	                            } else if (nodeRect.x < rightRect.x) {
 	                                swap = true;
@@ -1094,9 +1095,9 @@ navigationController = {
 	                }
 	            }
 	        }
-        } else {
-        	rightNode = navigationController.determineDownOrRightFrameFocus("right");
-        }
+    	} else {
+    		rightNode = navigationController.determineDownOrRightFrameFocus("right");
+    	}
         return rightNode;
     },
 
