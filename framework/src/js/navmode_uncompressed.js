@@ -625,6 +625,44 @@ navigationController = {
             }
         }
     },
+    
+    /* Determine which frame element to focus when there is a up or a left trackpad input */
+    determineUpOrLeftFrameFocus : function(direction) {
+    	var node = null,
+		    length = navigationController.focusableNodes.length;
+    	
+    	for ( var i = 0; i < length; i++ ) {
+			if ( navigationController.currentFocused.element === navigationController.focusableNodes[i].element ) {
+				if ( i + 1 !== -1 ) {
+					if ( direction === "up" && navigationController.focusableNodes[i].element.parentNode.cols === "" ) {
+						return navigationController.focusableNodes[i - 1];
+					} else if ( direction === "left" && navigationController.focusableNodes[i].element.parentNode.cols !== "" ) {
+						return navigationController.focusableNodes[i - 1];
+					}
+				} 
+			}
+		}
+    	return null;
+    },
+    
+    /* Determine which frame element to focus when there is a down or a right trackpad input */
+    determineDownOrRightFrameFocus : function(direction) {
+    	var node = null,
+    		length = navigationController.focusableNodes.length;
+    	
+    	for ( var i = 0; i < length; i++ ) {
+			if ( navigationController.currentFocused.element === navigationController.focusableNodes[i].element ) {
+				if ( i + 1 !== navigationController.focusableNodes.length ) {
+					if ( direction === "down" && navigationController.focusableNodes[i].element.parentNode.cols === "" ) {
+						return navigationController.focusableNodes[i + 1];
+					} else if ( direction === "right" && navigationController.focusableNodes[i].element.parentNode.cols !== "" ) {
+						return navigationController.focusableNodes[i + 1];
+					}
+				}
+			}
+		}
+    	return null;
+    },
 
     /* Highlight the first item on the screen */
     findHighestFocusableNodeInScreen : function() {
@@ -789,46 +827,51 @@ navigationController = {
         var length = navigationController.focusableNodes.length;
         var downNode = null;
         var downRect = null;
-        for ( var i = 0; i < length; i++) {
-            if (i == index) {
-                continue;
-            }
-
-            var node = navigationController.focusableNodes[i];
-            var nodeRect = node.rect;
-
-            if (nodeRect == null || nodeRect.width == 0 || nodeRect.height == 0) {
-                continue;
-            }
-
-            if (navigationController.isRectIntersectingVertically(nodeRect, currentRect)) {
-                var swap = false;
-                if (nodeRect.y == currentRect.y) {
-                    if (nodeRect.height == currentRect.height) {
-                        if (i > index) {
-                            return node;
-                        }
-                    } else if (nodeRect.height > currentRect.height) {
-                        swap = navigationController.needSwapWithDownRectInPriority(downRect, nodeRect);
-                    }
-                } else if (nodeRect.y > currentRect.y) {
-                    swap = navigationController.needSwapWithDownRectInPriority(downRect, nodeRect);
-                }
-                if (swap) {
-                    downNode = node;
-                    downRect = nodeRect;
-                }
-            } else if (!navigationController.isRectIntersectingHorizontally(nodeRect, currentRect)
-                    && navigationController.isRectIntersectingVertically(nodeRect, screenRect)) {
-                var swap = false;
-                if (nodeRect.y > currentRect.y) {
-                    swap = navigationController.needSwapWithDownRect(downRect, nodeRect);
-                }
-                if (swap) {
-                    downNode = node;
-                    downRect = nodeRect;
-                }
-            }
+        
+        if ( document.querySelectorAll("frame") == null ) {
+	        for ( var i = 0; i < length; i++) {
+	            if (i == index) {
+	                continue;
+	            }
+	
+	            var node = navigationController.focusableNodes[i];
+	            var nodeRect = node.rect;
+	
+	            if (nodeRect == null || nodeRect.width == 0 || nodeRect.height == 0) {
+	                continue;
+	            }
+	
+	            if (navigationController.isRectIntersectingVertically(nodeRect, currentRect)) {
+	                var swap = false;
+	                if (nodeRect.y == currentRect.y) {
+	                    if (nodeRect.height == currentRect.height) {
+	                        if (i > index) {
+	                            return node;
+	                        }
+	                    } else if (nodeRect.height > currentRect.height) {
+	                        swap = navigationController.needSwapWithDownRectInPriority(downRect, nodeRect);
+	                    }
+	                } else if (nodeRect.y > currentRect.y) {
+	                    swap = navigationController.needSwapWithDownRectInPriority(downRect, nodeRect);
+	                }
+	                if (swap) {
+	                    downNode = node;
+	                    downRect = nodeRect;
+	                }
+	            } else if (!navigationController.isRectIntersectingHorizontally(nodeRect, currentRect)
+	                    && navigationController.isRectIntersectingVertically(nodeRect, screenRect)) {
+	                var swap = false;
+	                if (nodeRect.y > currentRect.y) {
+	                    swap = navigationController.needSwapWithDownRect(downRect, nodeRect);
+	                }
+	                if (swap) {
+	                    downNode = node;
+	                    downRect = nodeRect;
+	                }
+	            }
+	        }
+        } else {
+        	downNode = navigationController.determineDownOrRightFrameFocus("down");
         }
         return downNode;
     },
@@ -854,45 +897,49 @@ navigationController = {
         var upRect = null;
         var screenRect = navigationController.getUnscaledScreenRect();
         var length = navigationController.focusableNodes.length;
-        for ( var i = length - 1; i >= 0; i--) {
-            if (i == index) {
-                continue;
-            }
-
-            var node = navigationController.focusableNodes[i];
-            var nodeRect = node.rect;
-            if (nodeRect == null || nodeRect.width == 0 || nodeRect.height == 0) {
-                continue;
-            }
-
-            if (navigationController.isRectIntersectingVertically(nodeRect, currentRect)) {
-                var swap = false;
-                if (nodeRect.y == currentRect.y) {
-                    if (nodeRect.height == currentRect.height) {
-                        if (i < index) {
-                            return node;
-                        }
-                    } else if (nodeRect.height < currentRect.height) {
-                        swap = navigationController.needSwapWithUpRectInPriority(upRect, nodeRect);
-                    }
-                } else if (nodeRect.y < currentRect.y) {
-                    swap = navigationController.needSwapWithUpRectInPriority(upRect, nodeRect);
-                }
-                if (swap) {
-                    upNode = node;
-                    upRect = nodeRect;
-                }
-            } else if (!navigationController.isRectIntersectingHorizontally(nodeRect, currentRect)
-                    && navigationController.isRectIntersectingVertically(nodeRect, screenRect)) {
-                var swap = false;
-                if (nodeRect.y < currentRect.y) {
-                    swap = navigationController.needSwapWithUpRect(upRect, nodeRect);
-                }
-                if (swap) {
-                    upNode = node;
-                    upRect = nodeRect;
-                }
-            }
+        if ( document.querySelectorAll("frame") == null ) {
+	        for ( var i = length - 1; i >= 0; i--) {
+	            if (i == index) {
+	                continue;
+	            }
+	
+	            var node = navigationController.focusableNodes[i];
+	            var nodeRect = node.rect;
+	            if (nodeRect == null || nodeRect.width == 0 || nodeRect.height == 0) {
+	                continue;
+	            }
+	
+	            if (navigationController.isRectIntersectingVertically(nodeRect, currentRect)) {
+	                var swap = false;
+	                if (nodeRect.y == currentRect.y) {
+	                    if (nodeRect.height == currentRect.height) {
+	                        if (i < index) {
+	                            return node;
+	                        }
+	                    } else if (nodeRect.height < currentRect.height) {
+	                        swap = navigationController.needSwapWithUpRectInPriority(upRect, nodeRect);
+	                    }
+	                } else if (nodeRect.y < currentRect.y) {
+	                    swap = navigationController.needSwapWithUpRectInPriority(upRect, nodeRect);
+	                }
+	                if (swap) {
+	                    upNode = node;
+	                    upRect = nodeRect;
+	                }
+	            } else if (!navigationController.isRectIntersectingHorizontally(nodeRect, currentRect)
+	                    && navigationController.isRectIntersectingVertically(nodeRect, screenRect)) {
+	                var swap = false;
+	                if (nodeRect.y < currentRect.y) {
+	                    swap = navigationController.needSwapWithUpRect(upRect, nodeRect);
+	                }
+	                if (swap) {
+	                    upNode = node;
+	                    upRect = nodeRect;
+	                }
+	            }
+	        }
+        } else {
+        	upNode = navigationController.determineUpOrDownFrameFocus("up");
         }
         return upNode;
     },
@@ -917,56 +964,61 @@ navigationController = {
         var leftNode = null;
         var leftRect = null;
         var length = navigationController.focusableNodes.length;
-        for ( var i = length - 1; i >= 0; i--) {
-            if (i == index) {
-                continue;
-            }
-
-            var node = navigationController.focusableNodes[i];
-            var nodeRect = node.rect;
-
-            if (nodeRect == null || nodeRect.width == 0 || nodeRect.height == 0) {
-                continue;
-            }
-
-            if (navigationController.isRectIntersectingHorizontally(nodeRect, currentRect)) {
-                var swap = false;
-                if (nodeRect.x == currentRect.x) {
-                    if (nodeRect.width == currentRect.width) {
-                        if (i < index) {
-                            return node;
-                        }
-                    } else if (nodeRect.width < currentRect.width) {
-                        if (leftNode == null) {
-                            swap = true;
-                        } else {
-                            if (nodeRect.x == leftRect.x) {
-                                if (nodeRect.width > leftRect.width) {
-                                    swap = true;
-                                }
-                            } else if (nodeRect.x > leftRect.x) {
-                                swap = true;
-                            }
-                        }
-                    }
-                } else if (nodeRect.x < currentRect.x) {
-                    if (leftNode == null) {
-                        swap = true;
-                    } else {
-                        if (nodeRect.x == leftRect.x) {
-                            if (nodeRect.width > leftRect.width) {
-                                swap = true;
-                            }
-                        } else if (nodeRect.x > leftRect.x) {
-                            swap = true;
-                        }
-                    }
-                }
-                if (swap) {
-                    leftNode = node;
-                    leftRect = nodeRect;
-                }
-            }
+        
+        if ( document.querySelectorAll("frame") == null ) {
+	        for ( var i = length - 1; i >= 0; i--) {
+	            if (i == index) {
+	                continue;
+	            }
+	
+	            var node = navigationController.focusableNodes[i];
+	            var nodeRect = node.rect;
+	
+	            if (nodeRect == null || nodeRect.width == 0 || nodeRect.height == 0) {
+	                continue;
+	            }
+	
+	            if (navigationController.isRectIntersectingHorizontally(nodeRect, currentRect)) {
+	                var swap = false;
+	                if (nodeRect.x == currentRect.x) {
+	                    if (nodeRect.width == currentRect.width) {
+	                        if (i < index) {
+	                            return node;
+	                        }
+	                    } else if (nodeRect.width < currentRect.width) {
+	                        if (leftNode == null) {
+	                            swap = true;
+	                        } else {
+	                            if (nodeRect.x == leftRect.x) {
+	                                if (nodeRect.width > leftRect.width) {
+	                                    swap = true;
+	                                }
+	                            } else if (nodeRect.x > leftRect.x) {
+	                                swap = true;
+	                            }
+	                        }
+	                    }
+	                } else if (nodeRect.x < currentRect.x) {
+	                    if (leftNode == null) {
+	                        swap = true;
+	                    } else {
+	                        if (nodeRect.x == leftRect.x) {
+	                            if (nodeRect.width > leftRect.width) {
+	                                swap = true;
+	                            }
+	                        } else if (nodeRect.x > leftRect.x) {
+	                            swap = true;
+	                        }
+	                    }
+	                }
+	                if (swap) {
+	                    leftNode = node;
+	                    leftRect = nodeRect;
+	                }
+	            }
+	        }
+        } else {
+        	leftNode = navigationController.determineUpOrDownFrameFocus("left");
         }
         return leftNode;
     },
@@ -991,57 +1043,60 @@ navigationController = {
         var rightNode = null;
         var rightRect = null;
         var length = navigationController.focusableNodes.length;
-        for ( var i = 0; i < length; i++) {
-            if (i == index) {
-                continue;
-            }
-            var node = navigationController.focusableNodes[i];
-            var nodeRect = node.rect;
-
-            if (nodeRect == null || nodeRect.width == 0 || nodeRect.height == 0) {
-                continue;
-            }
-
-            if (navigationController.isRectIntersectingHorizontally(nodeRect, currentRect)) {
-                var swap = false;
-                if (nodeRect.x == currentRect.x) {
-                    if (nodeRect.width == currentRect.width) {
-                        if (i > index) {
-                            return node;
-                        }
-                    } else if (nodeRect.width > currentRect.width) {
-                        if (rightNode == null) {
-                            swap = true;
-                        } else {
-                            if (nodeRect.x == rightRect.x) {
-                                if (nodeRect.width < rightRect.width) {
-                                    swap = true;
-                                }
-                            } else if (nodeRect.x < rightRect.x) {
-                                swap = true;
-                            }
-                        }
-                    }
-                } else if (nodeRect.x > currentRect.x) {
-                    if (rightNode == null) {
-                        swap = true;
-                    } else {
-                        if (nodeRect.x == rightRect.x) {
-                            if (nodeRect.width < rightRect.width) {
-                                swap = true;
-                            }
-                        } else if (nodeRect.x < rightRect.x) {
-                            swap = true;
-                        }
-                    }
-                }
-                if (swap) {
-                    rightNode = node;
-                    rightRect = nodeRect;
-                }
-            }
+        if ( document.querySelectorAll("frame") == null ) {
+	        for ( var i = 0; i < length; i++) {
+	            if (i == index) {
+	                continue;
+	            }
+	            var node = navigationController.focusableNodes[i];
+	            var nodeRect = node.rect;
+	
+	            if (nodeRect == null || nodeRect.width == 0 || nodeRect.height == 0) {
+	                continue;
+	            }
+	
+	            if (navigationController.isRectIntersectingHorizontally(nodeRect, currentRect)) {
+	                var swap = false;
+	                if (nodeRect.x == currentRect.x) {
+	                    if (nodeRect.width == currentRect.width) {
+	                        if (i > index) {
+	                            return node;
+	                        }
+	                    } else if (nodeRect.width > currentRect.width) {
+	                        if (rightNode == null) {
+	                            swap = true;
+	                        } else {
+	                            if (nodeRect.x == rightRect.x) {
+	                                if (nodeRect.width < rightRect.width) {
+	                                    swap = true;
+	                                }
+	                            } else if (nodeRect.x < rightRect.x) {
+	                                swap = true;
+	                            }
+	                        }
+	                    }
+	                } else if (nodeRect.x > currentRect.x) {
+	                    if (rightNode == null) {
+	                        swap = true;
+	                    } else {
+	                        if (nodeRect.x == rightRect.x) {
+	                            if (nodeRect.width < rightRect.width) {
+	                                swap = true;
+	                            }
+	                        } else if (nodeRect.x < rightRect.x) {
+	                            swap = true;
+	                        }
+	                    }
+	                }
+	                if (swap) {
+	                    rightNode = node;
+	                    rightRect = nodeRect;
+	                }
+	            }
+	        }
+        } else {
+        	rightNode = navigationController.determineDownOrRightFrameFocus("right");
         }
-
         return rightNode;
     },
 
