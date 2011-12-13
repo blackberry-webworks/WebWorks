@@ -34,20 +34,17 @@ public class NavigationNamespace extends Scriptable {
     public static final String LABEL_GET_DIRECTION = "getDirection";
 
     public static final String LABEL_FOCUS_OUT = "focusOut";
-//    public static final String LABEL_UPDATE_FOCUS_MAP = "updateFocusMap";
 
     public static final String LABEL_ON_SCROLL     = "onScroll";
     public static final String LABEL_ON_TRACKPADUP    = "onTrackpadUp";
     public static final String LABEL_ON_TRACKPADDOWN  = "onTrackpadDown";
 
-//    private WeakReference _widgetScreenWeakReference;
     private WidgetFieldManager _fieldManager;
 
     private ScriptableFunction _funcSetRimFocus;
     private ScriptableFunction _funcGetRimFocus;
     private ScriptableFunction _funcGetPriorFocus;
     private ScriptableFunction _funcGetDirection;
-//    private UpdateFocusMap _funcUpdateFocusMap;
 
     private ScriptableFunction _onScroll;
     private ScriptableFunction _focusOut;
@@ -55,23 +52,8 @@ public class NavigationNamespace extends Scriptable {
     private ScriptableFunction _onTrackpadDown;
 
     public NavigationNamespace( BrowserFieldScreen widgetScreen, WidgetFieldManager fieldManager ) {
-//        _widgetScreenWeakReference = new WeakReference( widgetScreen );
         _fieldManager = fieldManager;
-
-/*        
-        _funcUpdateFocusMap = new UpdateFocusMap();
-*/
     }
-/*
-    private BrowserFieldScreen getWidgetScreen() {
-        Object o = _widgetScreenWeakReference.get();
-        if( o instanceof BrowserFieldScreen ) {
-            return (BrowserFieldScreen) o;
-        } else {
-            return null;
-        }
-    }
-*/
     
     /* @Override */
     public Scriptable getParent() {
@@ -111,11 +93,7 @@ public class NavigationNamespace extends Scriptable {
         if( name.equals( LABEL_GET_DIRECTION ) ) {
             return _funcGetDirection;
         }
-/*        
-        if( name.equals( LABEL_UPDATE_FOCUS_MAP ) ) {
-            return _funcUpdateFocusMap;
-        }
-*/
+        
         if( name.equals( LABEL_ON_SCROLL ) ) {
             return _onScroll;
         }
@@ -167,21 +145,6 @@ public class NavigationNamespace extends Scriptable {
         
         return super.putField(name, value);
     }
-
-    /**
-     * Rescans and repopulates the navigation map
-     */
-//    private class UpdateFocusMap extends ScriptableFunction {
-        /* @Override */
-//        public Object invoke( Object thiz, Object[] args ) throws Exception {
-//            if( args == null || args.length == 0 ) {
-//                getWidgetScreen().getNavigationController().update();
-//                return UNDEFINED;
-//            }
-//
-//            throw new IllegalArgumentException();
-//        }
-//    }
 
     /**
      * Object that contains all data needed by JS navigation logic

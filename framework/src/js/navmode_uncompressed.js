@@ -280,19 +280,6 @@ navigationController = {
 
     /* Handle the press from the trackpad */
     onTrackpadDown : function() {
-        /*if (navigationController.currentFocused === null) {
-            return;
-        }
-        
-        try {
-            // Now send the mouseup DOM event
-            var mousedown = document.createEvent("MouseEvents");
-            mousedown.initMouseEvent("mousedown", true, true);
-            navigationController.currentFocused.element.dispatchEvent(mousedown);
-        } catch (e) {
-            // TODO: the last line sometimes causes an exception in 5.0 only, could not figure out why
-            // do nothing
-        }*/
     },
 
     /* Handle the "release" of the press from the trackpad */
@@ -1301,58 +1288,8 @@ navigationController = {
             return true;
         }
         
-        /*
-         * if( node instanceof HTMLSelectElement ) {
-         *   if ( DeviceInfo.isBlackBerry6() ) // WebKit will autofocus the select element
-         *      return false;
-         *   else{
-         *      HTMLSelectElement select = ( HTMLSelectElement ) node;
-         *      return !select.getMultiple();
-         *   }
-         * }
-         *
-         * return ( node instanceof HTMLTextAreaElement );
-         */
         return false;
     },
-
-    /*
-     *
-     *
-     *
-     *
-     * private boolean requiresNavigation( Node node ) {
-     *    if( node instanceof HTMLInputElement ) {
-     *       String type = ( (HTMLInputElement) node ).getType();
-     *       return ( SUPPRESS_NAVIGATION_INPUT_TYPES.indexOf( type ) < 0 );
-     *    }
-     *
-     *    if( node instanceof HTMLSelectElement ) return true;
-     *
-     *    if( node instanceof HTMLTextAreaElement ) return true;
-     *
-     *    if( node instanceof HTMLButtonElement ) return true;
-     *
-     *    return ( node instanceof HTMLObjectElement );
-     * }
-     *
-     *  /* Determines if the current control is a special case that requires a
-     * click event in WebKit.
-     */
-    /*
-     * boolean currentNodeRequiresClickInWebKit(){
-     *   if( _currentFocusNode == null ){
-     *     return false;
-     *   }
-     *
-     *   if( DeviceInfo.isBlackBerry6() ){
-     *     if( _currentFocusNode instanceof HTMLInputElement ){
-     *       String type = ( ( HTMLInputElement ) _currentFocusNode ).getType();
-     *       return REQUIRE_CLICK_INPUT_TYPES.indexOf( type ) > 0;
-     *     }
-     *   } return false;
-     * }
-     */
 
     scrollToRect : function(rect) {
         // Check vertical scroll.
@@ -1364,9 +1301,7 @@ navigationController = {
         // rect.height);
 
         if (rect.y < verticalScroll) {
-            // TODO: [RT] not using SAFE_MARGIN makes it work more like the native scrolling
-            newVerticalScroll = Math.max(
-                    rect.y /*- navigationController.scaleValue( navigationController.SAFE_MARGIN )*/, 0);
+            newVerticalScroll = Math.max(rect.y, 0);
             // alert("rect.y (" + rect.y + ") < vScroll (" + verticalScroll +
             // "), need scroll up, newVScroll: " + newVerticalScroll);
         } else if (rect.y + rect.height > verticalScroll + navigationController.height) {
@@ -1378,14 +1313,9 @@ navigationController = {
              * navigationController.height) + " c: " + (rect.y + rect.height -
              * navigationController.height));
              */
-            // TODO: [RT] not using SAFE_MARGIN makes it work more like the native scrolling
             newVerticalScroll = Math
                     .min(
-                            rect.y + rect.height - navigationController.height /*
-                                                                                 * +
-                                                                                 * navigationController.scaleValue(
-                                                                                 * navigationController.SAFE_MARGIN )
-                                                                                 */,
+                            rect.y + rect.height - navigationController.height,
                             navigationController.virtualHeight - navigationController.height);
         }
 
@@ -1395,11 +1325,9 @@ navigationController = {
         if (rect.width >= navigationController.width) {
             newHorizontalScroll = Math.max(rect.x, 0);
         } else if (rect.x < horizontalScroll) {
-            newHorizontalScroll = Math.max(rect.x /* - navigationController.scaleValue(navigationController.SAFE_MARGIN )*/,
-                    0);
+            newHorizontalScroll = Math.max(rect.x, 0);
         } else if (rect.x + rect.width > horizontalScroll + navigationController.width) {
-            newHorizontalScroll = Math.min(rect.x + rect.width - navigationController.width
-                    /*+ navigationController.scaleValue(navigationController.SAFE_MARGIN)*/,
+            newHorizontalScroll = Math.min(rect.x + rect.width - navigationController.width,
                     navigationController.virtualWidth - navigationController.width);
         }
         
@@ -1470,61 +1398,10 @@ navigationController = {
 
     scrollX : function(value) {
         window.scrollTo(navigationController.unscaleValue(value), window.pageYOffset);
-
-        // Below is some experimental smooth scrolling code
-        /*var startX = 0;
-        if (window.pageXOffset)
-            startX = window.pageXOffset;
-        var stopX = value;
-        var distance = stopX > startX ? stopX - startX : startX - stopX;
-        if (distance < 100) {
-            window.scrollTo(stopX, 0); return;
-        }
-        var speed = Math.round(distance / 100);
-        if (speed >= 20) speed = 20;
-        var step = Math.round(distance / 25);
-        var leapX = stopX > startX ? startX + step : startX - step;
-        var timer = 0;
-        if (stopX > startX) {
-            for ( var i=startX; i<stopX; i+=step ) {
-                setTimeout("window.scrollTo("+leapY+",0)", timer * speed);
-                leapX += step; if (leapX > stopX) leapX = stopX; timer++;
-            } return;
-        }
-        for ( var i=startX; i>stopX; i-=step ) {
-            setTimeout("window.scrollTo("+leapY+",0)", timer * speed);
-            leapX -= step; if (leapX < stopX) leapX = stopX; timer++;
-        }*/
-
     },
 
     scrollY : function(value) {
         window.scrollTo(window.pageXOffset, navigationController.unscaleValue(value));
-
-        // Below is some experimental smooth scrolling code
-        /*var startY = 0;
-        if (window.pageYOffset)
-            startY = window.pageYOffset;
-        var stopY = value;
-        var distance = stopY > startY ? stopY - startY : startY - stopY;
-        if (distance < 100) {
-            window.scrollTo(0, stopY); return;
-        }
-        var speed = Math.round(distance / 100);
-        if (speed >= 20) speed = 20;
-        var step = Math.round(distance / 25);
-        var leapY = stopY > startY ? startY + step : startY - step;
-        var timer = 0;
-        if (stopY > startY) {
-            for ( var i=startY; i<stopY; i+=step ) {
-                setTimeout("window.scrollTo(0, "+leapY+")", timer * speed);
-                leapY += step; if (leapY > stopY) leapY = stopY; timer++;
-            } return;
-        }
-        for ( var i=startY; i>stopY; i-=step ) {
-            setTimeout("window.scrollTo(0, "+leapY+")", timer * speed);
-            leapY -= step; if (leapY < stopY) leapY = stopY; timer++;
-        }*/
     }
 
 }
