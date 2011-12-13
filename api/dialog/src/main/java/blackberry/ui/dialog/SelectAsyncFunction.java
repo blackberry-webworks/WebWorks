@@ -54,7 +54,7 @@ public class SelectAsyncFunction extends ScriptableFunctionBase {
         boolean[] selected = new boolean[ numChoices ];
         int[] types = new int[ numChoices ];
 
-        populateChoiceStateArrays( choices, labels, enabled, selected, types );
+        populateChoiceStateArrays( choices, labels, enabled, selected, types, allowMultiple );
         
         Runnable dr = DialogRunnableFactory.getSelectRunnable(allowMultiple, labels, enabled, selected, types, callback, thiz);
         
@@ -66,14 +66,21 @@ public class SelectAsyncFunction extends ScriptableFunctionBase {
     }
 
     private void populateChoiceStateArrays( Scriptable fromScriptableChoices, String[] labels, boolean[] enabled,
-            boolean[] selected, int[] type ) {
+            boolean[] selected, int[] type, boolean allowMultiple ) {
         try {
 
+            boolean firstSelected = false;
+            boolean canSelect = true;
+            
             for( int i = 0; i < fromScriptableChoices.getElementCount(); i++ ) {
                 Scriptable choice = (Scriptable) fromScriptableChoices.getElement( i );
                 labels[ i ] = (String) choice.getField( "label" );
                 enabled[ i ] = ( (Boolean) choice.getField( "enabled" ) ).booleanValue();
-                selected[ i ] = ( (Boolean) choice.getField( "selected" ) ).booleanValue();
+                
+                canSelect = allowMultiple || !firstSelected;
+                selected[ i ] = canSelect && enabled[ i ] && ( (Boolean) choice.getField( "selected" ) ).booleanValue();
+                firstSelected = firstSelected || selected[ i ];
+                
                 type[ i ] = ( (String) choice.getField( "type" ) ).equals( "group" ) ? POPUP_ITEM_TYPE_GROUP
                         : POPUP_ITEM_TYPE_OPTION;
             }
