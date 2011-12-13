@@ -21,7 +21,7 @@ navigationController = {
     AUTO_FOCUS_INPUT_TYPES : '|color|date|month|time|week|email|number|password|search|text|url|tel|',
     SCROLLABLE_INPUT_TYPES : '|text|password|email|search|tel|number|url|',
     REQUIRE_CLICK_INPUT_TYPES : '|file|',
-    querySelector : 'frame,textarea:not([x-blackberry-focusable=false]),a:not([x-blackberry-focusable=false]),input:not([x-blackberry-focusable=false]),select:not([x-blackberry-focusable=false]),button:not([x-blackberry-focusable=false]),[x-blackberry-focusable=true]',
+    querySelector : 'textarea:not([x-blackberry-focusable=false]),a:not([x-blackberry-focusable=false]),input:not([x-blackberry-focusable=false]),select:not([x-blackberry-focusable=false]),button:not([x-blackberry-focusable=false]),[x-blackberry-focusable=true]',
 
     DOWN : 3,
     UP : 2,
