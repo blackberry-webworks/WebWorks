@@ -21,7 +21,7 @@ navigationController = {
     AUTO_FOCUS_INPUT_TYPES : '|color|date|month|time|week|email|number|password|search|text|url|tel|',
     SCROLLABLE_INPUT_TYPES : '|text|password|email|search|tel|number|url|',
     REQUIRE_CLICK_INPUT_TYPES : '|file|',
-    querySelector : 'textarea:not([x-blackberry-focusable=false]),a:not([x-blackberry-focusable=false]),input:not([x-blackberry-focusable=false]),select:not([x-blackberry-focusable=false]),button:not([x-blackberry-focusable=false]),[x-blackberry-focusable=true]',
+    querySelector : 'textarea:not([x-blackberry-focusable=false]),a:not([x-blackberry-focusable=false]),input:not([x-blackberry-focusable=false]), select:not([x-blackberry-focusable=false]), iframe:not([x-blackberry-focusable=false]), button:not([x-blackberry-focusable=false]), [x-blackberry-focusable=true]',
 
     DOWN : 3,
     UP : 2,
@@ -1059,7 +1059,26 @@ navigationController = {
      * populate the list of elements and their absolute bounding rects
      */
     getFocusableElements : function() {
-        var items = document.body.querySelectorAll(navigationController.querySelector)
+        var items = [],
+            i, j,
+            iframes = document.getElementsByTagName("iframe"),
+            iframeFocusables,
+            focusables = document.body.querySelectorAll(navigationController.querySelector);
+        
+        for(i = 0; i < focusables.length; i++) {
+            items.push(focusables[i]);
+        }
+        
+        for(i = 0; i < iframes.length; i++) {
+            //Make sure the iframe has loaded content before we add it to the navigation map
+            if(iframes[i].contentDocument.body !== null) {
+                iframeFocusables = iframes[i].contentDocument.body.querySelectorAll(navigationController.querySelector);
+                for(j = 0; j < iframeFocusables.length; j++) {
+                    items.push(iframeFocusables[j]);
+                }
+            }
+        }
+        
         var length = items.length;
         // Determine bounding rects and populate list
         var boundingRects = [];
@@ -1514,35 +1533,36 @@ navigationController = {
 
 bbNav = {
     init : function() {
-
-        var data = {
-            'direction' : 3,
-            'delta' : 1,
-            'zoomScale' : 1,
-            'virtualHeight' : screen.height,
-            'virtualWidth' : screen.width,
-            'verticalScroll' : 0,
-            'horizontalScroll' : 0,
-            'height' : screen.height,
-            'width' : screen.width
-        };
-        
-        blackberry.focus.onScroll = navigationController.onScroll;
-        blackberry.focus.onTrackpadDown = navigationController.onTrackpadDown;
-        blackberry.focus.onTrackpadUp = navigationController.onTrackpadUp;
-        blackberry.focus.getDirection = navigationController.getDirection;
-        blackberry.focus.getFocus = navigationController.getFocus;
-        blackberry.focus.getPriorFocus = navigationController.getPriorFocus;
-        blackberry.focus.setFocus = navigationController.setFocus;
-        blackberry.focus.focusOut = navigationController.focusOut;
-        
-        navigationController.initialize(data);
-        
-        navigationController.handleSelect = blackberry.ui.dialog.selectAsync;
-        navigationController.handleInputDateTime = blackberry.ui.dialog.dateTimeAsync;
-        navigationController.handleInputColor = blackberry.ui.dialog.colorPickerAsync;
+		if (window.top === window.self) {
+			var data = {
+				'direction' : 3,
+				'delta' : 1,
+				'zoomScale' : 1,
+				'virtualHeight' : screen.height,
+				'virtualWidth' : screen.width,
+				'verticalScroll' : 0,
+				'horizontalScroll' : 0,
+				'height' : screen.height,
+				'width' : screen.width
+			};
+			
+			blackberry.focus.onScroll = navigationController.onScroll;
+			blackberry.focus.onTrackpadDown = navigationController.onTrackpadDown;
+			blackberry.focus.onTrackpadUp = navigationController.onTrackpadUp;
+			blackberry.focus.getDirection = navigationController.getDirection;
+			blackberry.focus.getFocus = navigationController.getFocus;
+			blackberry.focus.getPriorFocus = navigationController.getPriorFocus;
+			blackberry.focus.setFocus = navigationController.setFocus;
+			blackberry.focus.focusOut = navigationController.focusOut;
+			
+			navigationController.initialize(data);
+			
+			navigationController.handleSelect = blackberry.ui.dialog.selectAsync;
+			navigationController.handleInputDateTime = blackberry.ui.dialog.dateTimeAsync;
+			navigationController.handleInputColor = blackberry.ui.dialog.colorPickerAsync;
+		}
     }
 }
 
-addEventListener("DOMContentLoaded", bbNav.init, false);
+addEventListener("load", bbNav.init, false);
 }());
