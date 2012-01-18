@@ -15,7 +15,7 @@
  */
 package blackberry.payment;
 
-import net.rimlib.blackberry.api.payment.PaymentEngine;
+import net.rimlib.blackberry.api.paymentsdk.PaymentEngine;
 
 /**
  * PaymentEngine singleton and connection mode handler.
@@ -30,8 +30,7 @@ public class PaymentSystem {
 
     public static void setMode( boolean developmentMode ) {
         _developmentMode = developmentMode;
-        SingletonHolder.getInstance().setConnectionMode(
-                ( _developmentMode ? PaymentEngine.CONNECTION_MODE_LOCAL : PaymentEngine.CONNECTION_MODE_NETWORK ) );
+       
     }
 
     public static boolean getMode() {

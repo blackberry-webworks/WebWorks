@@ -19,16 +19,39 @@
 
 	var FUNCTION_PURCHASE = "purchase";
 	var FUNCTION_GETEXISTINGPURCHASES = "getExistingPurchases";
-	var PARAMETER_DEVMODE = "developmentMode";
-
+	// gpoor 1.5 methods 
+	var FUNCTION_CANCEL = "cancel";
+	var FUNCTION_GETPRICE = "getPrice";
+	var FUNCTION_GET = "get";
+	var FUNCTION_CHECKEXISTING = "checkExisting";
+	var FUNCTION_ISAPPWORLDINSTALLEDANDATCORRECTVERSION = "isAppWorldInstalledAndAtCorrectVersion";
+	var FUNCTION_UPDATEAPPWORLD ="updateAppWorld";
+	// 2.0 methods
+	var FUNCTION_ISPAYMENTSERVICESAVAILABLE = "isPaymentServicesAvailable";
+	var FUNCTION_GETDIGITALGOODS = "getDigitalGoods";
+	var FUNCTION_GETPURCHASEHISTORY = "getPurchaseHistory";
+	
+    var PS_DEBUG = false;
+	var version_name = "PS SDK Java Script 1.8.0";
+	var version_number = 1;
+	
 	var _callbackSuccess = {};
 	var _callbackError  = {};
-	var _developmentMode = false;
 
 	function PaymentDispatcher() {};
 
 	function makeFunctionCall(evt, args, handler1, handler2) {
-		if (evt == FUNCTION_PURCHASE || evt == FUNCTION_GETEXISTINGPURCHASES) {
+		if (evt == FUNCTION_PURCHASE 
+				|| evt == FUNCTION_GETEXISTINGPURCHASES 		
+				|| evt== FUNCTION_CANCEL
+				|| evt== FUNCTION_GET  
+				|| evt== FUNCTION_GETPRICE  
+				|| evt== FUNCTION_CHECKEXISTING
+				|| evt== FUNCTION_UPDATEAPPWORLD
+				|| evt== FUNCTION_ISAPPWORLDINSTALLEDANDATCORRECTVERSION
+				|| evt== FUNCTION_GETDIGITALGOODS
+				|| evt== FUNCTION_GETPURCHASEHISTORY				
+				) {
 			_callbackSuccess[evt] = handler1;
 			_callbackError[evt] = handler2;
 		}
@@ -170,7 +193,43 @@
 			"purchaseAppIcon" : o["purchaseAppIcon"]
 			}, callbackOnSuccess, callbackOnFailure);
 	};
-
+	// function getPrice
+	PaymentDispatcher.prototype.getPrice = function(sku, callbackOnSuccess, callbackOnFailure) {
+		// sku must be defined and not null
+		if (sku == null ) {
+			throw new Error("getPrice parameter sku must be defined. sku="+sku);
+		}
+		debugAlert("2 getPrice sku as string ="+sku);
+		makeFunctionCall(FUNCTION_GETPRICE, {"digitalGoodSKU" : sku}, callbackOnSuccess, callbackOnFailure);
+	};	
+	
+	// function checkExisting
+	PaymentDispatcher.prototype.checkExisting = function(sku, callbackOnSuccess, callbackOnFailure) {
+		// sku must be defined and not null	
+		if (sku == null ) {
+			throw new Error("checkExisting parameter sku must be defined. sku="+sku);
+		}
+		debugAlert("2 checkExisting sku as json="+sku);
+		makeFunctionCall(FUNCTION_CHECKEXISTING, {"digitalGoodSKU" :sku} , callbackOnSuccess, callbackOnFailure);
+	};
+	// function get
+	PaymentDispatcher.prototype.getPurchaseDetails = function(sku, callbackOnSuccess, callbackOnFailure) {
+		// sku must be defined and not null
+		if (sku == null) {
+			throw new Error("get parameter sku must be defined. sku="+sku);
+		}
+		debugAlert("2 get sku as string ="+sku);
+		makeFunctionCall(FUNCTION_GET, {"digitalGoodSKU" : sku}  , callbackOnSuccess, callbackOnFailure);
+	};
+	// function cancel
+	PaymentDispatcher.prototype.cancelSubscription = function(transactionID, callbackOnSuccess, callbackOnFailure) {
+		// sku must be defined and not null
+		if (transactionID == null) {
+			throw new Error("get parameter transactionID must be defined. transactionID="+transactionID);
+		}
+		debugAlert("2 get transactionID as string ="+transactionID);
+		makeFunctionCall(FUNCTION_CANCEL, {"transactionID" : transactionID}  , callbackOnSuccess, callbackOnFailure);
+	};
 	// function getExistingPurchases
 	PaymentDispatcher.prototype.getExistingPurchases = function(refresh, callbackOnSuccess, callbackOnFailure) {
 		validateGEPArgs(refresh, callbackOnSuccess, callbackOnFailure);
@@ -185,23 +244,33 @@
 		}
 	};
 
-	 // Get & Set development mode
-	PaymentDispatcher.prototype.getDevelopmentMode = function(){
-		return makeGetDevelopmentModeCall();
+	PaymentDispatcher.prototype.updateAppWorld = function(){
+		debugAlert(FUNCTION_UPDATEAPPWORLD);
+		makeFunctionCall(FUNCTION_UPDATEAPPWORLD, {}, null, null);
 	};
 
-	PaymentDispatcher.prototype.setDevelopmentMode = function(mode){
-		return makeSetDevelopmentModeCall(mode);
+	PaymentDispatcher.prototype.isAppWorldInstalledAndAtCorrectVersion = function(callbackOnSuccess, callbackOnFailure){
+		debugAlert(FUNCTION_ISAPPWORLDINSTALLEDANDATCORRECTVERSION);
+		makeFunctionCall(FUNCTION_ISAPPWORLDINSTALLEDANDATCORRECTVERSION, {}, callbackOnSuccess, callbackOnFailure);
+
+	};
+	PaymentDispatcher.prototype.isPaymentServicesAvailable = function(callbackOnSuccess, callbackOnFailure){
+		makeFunctionCall(FUNCTION_ISPAYMENTSERVICESAVAILABLE, {}, callbackOnSuccess, callbackOnFailure);
+	}
+	
+	// function getDigitalGoods
+	PaymentDispatcher.prototype.getDigitalGoods = function(callbackOnSuccess, callbackOnFailure) {
+		makeFunctionCall(FUNCTION_GETDIGITALGOODS, {} , callbackOnSuccess, callbackOnFailure);
 	};
 	
-	function makeGetDevelopmentModeCall() {
-		var recall = makeParamCall("getDevelopmentMode", {});
-	}
-
-	function makeSetDevelopmentModeCall(mode) {
-		var modeString = (mode) ? "true" : "false";
-		var recall = makeParamCall("setDevelopmentMode", { "developmentMode" : modeString } );
-	}
-
+	// function getPurchaseHistory
+	PaymentDispatcher.prototype.getPurchaseHistory = function(callbackOnSuccess, callbackOnFailure) {
+		makeFunctionCall(FUNCTION_GETPURCHASEHISTORY, {} , callbackOnSuccess, callbackOnFailure);
+	};
+	
+	function debugAlert (debugmessage){
+		if (true==PS_DEBUG)
+			alert(debugmessage);
+	};
 	blackberry.Loader.javascriptLoaded("blackberry.payment", PaymentDispatcher);
 })();
