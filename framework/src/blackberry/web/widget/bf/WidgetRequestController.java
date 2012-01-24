@@ -45,13 +45,14 @@ import blackberry.web.widget.policy.WidgetPolicyFactory;
 import blackberry.web.widget.bf.HTTPResponseStatus;
 
 /**
- * 
+ * The protocol controller class for WebWorks which handles navigation and resource requests
  */
 public class WidgetRequestController extends ProtocolController {
     private WidgetConfig _widgetConfig;
     private WidgetPolicy _widgetPolicy;
     private boolean _hasMultiAccess;
     private BrowserField _browserField;
+    private InputConnection _inputConnection;
 
     /**
      * Constructor.
@@ -70,6 +71,7 @@ public class WidgetRequestController extends ProtocolController {
         }
 
     }
+    
 
     /**
      * @see net.rim.device.api.browser.field2.BrowserFieldController
@@ -99,35 +101,35 @@ public class WidgetRequestController extends ProtocolController {
             String protocol = request.getProtocol();
 
             bfScreen.getPageManager().setGoingBackSafe( false );
-            InputConnection ic = null;
+            //InputConnection ic = null;
             try {
                 if( bfScreen.getCacheManager() != null && bfScreen.getCacheManager().isRequestCacheable( request ) ) {
                     if( bfScreen.getCacheManager().hasCache( request.getURL() )
                             && !bfScreen.getCacheManager().hasCacheExpired( request.getURL() ) ) {
-                        ic = bfScreen.getCacheManager().getCache( request.getURL() );
+                        _inputConnection = bfScreen.getCacheManager().getCache( request.getURL() );
                     } else {
-                        ic = _browserField.getConnectionManager().makeRequest( request );
-                        if( ic instanceof HttpConnection ) {
-                            HttpConnection response = (HttpConnection) ic;
+                        _inputConnection = _browserField.getConnectionManager().makeRequest( request );
+                        if( _inputConnection instanceof HttpConnection ) {
+                            HttpConnection response = (HttpConnection) _inputConnection;
                             if( bfScreen.getCacheManager().isResponseCacheable( response ) ) {
-                                ic = bfScreen.getCacheManager().createCache( request.getURL(), response );
+                                _inputConnection = bfScreen.getCacheManager().createCache( request.getURL(), response );
 
                             }
                         }
                     }
 
-                    ic = processAuthentication( ic, request );
+                    _inputConnection = processAuthentication( _inputConnection, request );
 
-                    _browserField.displayContent( ic, request.getURL() );
+                    _browserField.displayContent( _inputConnection, request.getURL() );
                 } else {
 
                     // Check whether authentication is required
                     if( isHttpProtocol( request ) ) {
                         // Only HTTP/HTTPS can use the API to receive the response
-                        ic = _browserField.getConnectionManager().makeRequest( request );
-                        ic = processAuthentication( ic, request );
+                        _inputConnection = _browserField.getConnectionManager().makeRequest( request );
+                        _inputConnection = processAuthentication( _inputConnection, request );
 
-                        _browserField.displayContent( ic, request.getURL() );
+                        _browserField.displayContent( _inputConnection, request.getURL() );
                     } else {
                         super.handleNavigationRequest( request );
                     }
@@ -152,6 +154,11 @@ public class WidgetRequestController extends ProtocolController {
 
                 // Rethrow the Exception
                 throw e;
+            } finally {
+            	if (_inputConnection != null) {
+            		System.out.println("Closing InputConnection " + _inputConnection.toString());
+            		_inputConnection.close();
+            	}
             }
         }
 		
@@ -170,7 +177,6 @@ public class WidgetRequestController extends ProtocolController {
      * @see net.rim.device.api.browser.field2.BrowserFieldController
      */
     public InputConnection handleResourceRequest( BrowserFieldRequest request ) throws Exception {
-
         if( this._browserField == null ) {
             return new HTTPResponseStatus( HTTPResponseStatus.SC_SERVER_ERROR, request ).getResponse();
         }
@@ -217,25 +223,25 @@ public class WidgetRequestController extends ProtocolController {
         }
 
         BrowserFieldScreen bfScreen = ( (BrowserFieldScreen) _browserField.getScreen() );
-        InputConnection ic = null;
+        //InputConnection ic = null;
         if( bfScreen.getCacheManager() != null && bfScreen.getCacheManager().isRequestCacheable( request ) ) {
             if( bfScreen.getCacheManager().hasCache( request.getURL() )
                     && !bfScreen.getCacheManager().hasCacheExpired( request.getURL() ) ) {
-                ic = bfScreen.getCacheManager().getCache( request.getURL() );
+                _inputConnection = bfScreen.getCacheManager().getCache( request.getURL() );
             } else {
-                ic = super.handleResourceRequest( request );
-                if( ic instanceof HttpConnection ) {
-                    HttpConnection response = (HttpConnection) ic;
+                _inputConnection = super.handleResourceRequest( request );
+                if( _inputConnection instanceof HttpConnection ) {
+                    HttpConnection response = (HttpConnection) _inputConnection;
                     if( bfScreen.getCacheManager().isResponseCacheable( response ) ) {
-                        ic = bfScreen.getCacheManager().createCache( request.getURL(), response );
+                        _inputConnection = bfScreen.getCacheManager().createCache( request.getURL(), response );
                     }
                 }
             }
         } else {
-            ic = super.handleResourceRequest( request );
+            _inputConnection = super.handleResourceRequest( request );
         }
-        ic = processAuthentication( ic, request );
-        return ic;
+        _inputConnection = processAuthentication( _inputConnection, request );
+        return _inputConnection;
     }
 
     /**
