@@ -74,8 +74,8 @@ public class CustomAskAsyncFunction extends ScriptableFunctionBase {
         // choices
         fs.addParam( Scriptable.class, true );
         // callback
-        fs.addParam( ScriptableFunction.class, true );
-	// filler
+        fs.addParam( ScriptableFunction.class, false );
+	    // filler
         fs.addParam( Object.class, false );
         return new FunctionSignature[] { fs };
     }
