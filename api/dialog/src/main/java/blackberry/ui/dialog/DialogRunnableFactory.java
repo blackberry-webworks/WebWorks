@@ -186,11 +186,13 @@ public class DialogRunnableFactory {
         public void run() { 
         	_dialogValue = new Integer(_dialog.doModal());
             //get object's string as all ecma primitives will return a valid string representation of themselves
-            Object retVal = _dialogValue.toString();        
-            try {
-                _callback.invoke(null, new Object[] { retVal });
-            } catch (Exception e) {
-                throw new RuntimeException("Invoke callback failed: " + e.getMessage());
+            Object retVal = _dialogValue.toString(); 
+            if (callback != null) {
+                try {
+                    _callback.invoke(null, new Object[] { retVal });
+                } catch (Exception e) {
+                    throw new RuntimeException("Invoke callback failed: " + e.getMessage());
+                }
             }
         }
     }
